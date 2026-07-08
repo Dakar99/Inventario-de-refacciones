@@ -195,14 +195,16 @@ router.put("/refacciones/:id", verificarToken, async (req, res) => {
     query += ` WHERE id = $${idx} RETURNING *`;
     values.push(id);
     
-    await stock_minimo(refaccion);
-
     const result = await pool.query(query, values);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Refacción no encontrada" });
-    }
 
-    res.json(result.rows[0]);
+if (result.rows.length === 0) {
+  return res.status(404).json({ error: "Refacción no encontrada" });
+}
+
+// Verificar si quedó con stock mínimo después de actualizar
+await stock_minimo(result.rows[0]);
+
+res.json(result.rows[0]);
   } catch (error) {
     console.error("Error en PUT /refacciones:", error);
     res.status(500).json({ error: "Error al actualizar refacción" });
