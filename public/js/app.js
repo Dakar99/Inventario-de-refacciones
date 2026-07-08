@@ -38,7 +38,7 @@ const TIT = {
   equipos: { t: "Equipos", s: "Gestión de pipas, trailers y estaciones" },
 };
 function obtenerToken() {
-  return localStorage.getItem("token");
+  return sessionStorage.getItem("token");
 }
 
 function headersAuth() {
@@ -52,7 +52,7 @@ function usuarioActual() {
   if (S && S.usr) return S.usr;
 
   try {
-    return JSON.parse(localStorage.getItem("usuario") || "null");
+    return JSON.parse(sessionStorage.getItem("usuario") || "null");
   } catch (e) {
     return null;
   }
@@ -642,7 +642,7 @@ function cambiarEmpresa(empresa) {
   // El sistema ahora trabaja contra PostgreSQL por medio de la API.
   // localStorage solo conserva sesión/token, no datos del inventario.
   const token = obtenerToken();
-  const usuario = localStorage.getItem("usuario");
+  const usuario = sessionStorage.getItem("usuario");
   if (token && usuario) {
     try {
       const usr = JSON.parse(usuario);
@@ -718,8 +718,8 @@ function login() {
       return res.json();
     })
     .then((data) => {
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("usuario", JSON.stringify(data.usuario));
+      sessionStorage.setItem("token", data.token);
+      sessionStorage.setItem("usuario", JSON.stringify(data.usuario));
 
       aplicarSesion(data.usuario);
       nav("dashboard");
@@ -730,47 +730,47 @@ function login() {
 }
 
 function mostrarMenuPorRol(rol) {
+  const usr = usuarioActual();
 
-    const usr = usuarioActual();
+  const adminItems = [
+    "ubicaciones",
+    "usuarios",
+    "alertas",
+    "equipos",
+    "reportes",
+  ];
+  const menuItems = document.querySelectorAll(".ni");
 
-    const adminItems = ["ubicaciones", "usuarios", "alertas", "equipos", "reportes"];
-    const menuItems = document.querySelectorAll(".ni");
+  menuItems.forEach((item) => {
+    const sec = item.dataset.s;
 
-    menuItems.forEach((item) => {
-        const sec = item.dataset.s;
-
-        if (adminItems.includes(sec)) {
-            item.style.display = rol === "bodega" ? "flex" : "none";
-        } else if (rol === "solicitante" && sec === "entradas") {
-            item.style.display = "none";
-        } else {
-            item.style.display = "flex";
-        }
-    });
-
-    const empTec = document.getElementById("emp-tec");
-    const empPar = document.getElementById("emp-par");
-
-    if (rol === "bodega") {
-
-        if (empTec) empTec.style.display = "flex";
-        if (empPar) empPar.style.display = "flex";
-
+    if (adminItems.includes(sec)) {
+      item.style.display = rol === "bodega" ? "flex" : "none";
+    } else if (rol === "solicitante" && sec === "entradas") {
+      item.style.display = "none";
     } else {
-
-        if (empTec)
-            empTec.style.display =
-                usr.empresa === "tecomatlan" ? "flex" : "none";
-
-        if (empPar)
-            empPar.style.display =
-                usr.empresa === "paraiso" ? "flex" : "none";
+      item.style.display = "flex";
     }
+  });
+
+  const empTec = document.getElementById("emp-tec");
+  const empPar = document.getElementById("emp-par");
+
+  if (rol === "bodega") {
+    if (empTec) empTec.style.display = "flex";
+    if (empPar) empPar.style.display = "flex";
+  } else {
+    if (empTec)
+      empTec.style.display = usr.empresa === "tecomatlan" ? "flex" : "none";
+
+    if (empPar)
+      empPar.style.display = usr.empresa === "paraiso" ? "flex" : "none";
+  }
 }
 
 function logout() {
-  localStorage.removeItem("token");
-  localStorage.removeItem("usuario");
+  sessionStorage.removeItem("token");
+  sessionStorage.removeItem("usuario");
   S.usr = null;
   document.getElementById("app-principal").style.display = "none";
   document.getElementById("pantalla-login").style.display = "";
@@ -913,12 +913,14 @@ function rDash() {
 
 const usr = usuarioActual();
 
-if (usr && usr.rol !== 'bodega') {
-    const empTec = document.getElementById('emp-tec');
-    const empPar = document.getElementById('emp-par');
+if (usr && usr.rol !== "bodega") {
+  const empTec = document.getElementById("emp-tec");
+  const empPar = document.getElementById("emp-par");
 
-    if (empTec) empTec.style.display = usr.empresa === 'tecomatlan' ? 'flex' : 'none';
-    if (empPar) empPar.style.display = usr.empresa === 'paraiso' ? 'flex' : 'none';
+  if (empTec)
+    empTec.style.display = usr.empresa === "tecomatlan" ? "flex" : "none";
+  if (empPar)
+    empPar.style.display = usr.empresa === "paraiso" ? "flex" : "none";
 }
 
 // ===== INVENTARIO =====
@@ -934,7 +936,7 @@ function rInv() {
   if (categoria) params.append("categoria", categoria);
   if (empresa) params.append("empresa", empresa);
 
-  fetch(`/refacciones?${params.toString()}`, {
+  fetch(`/api/refacciones?${params.toString()}`, {
     headers: headersAuth(),
   })
     .then((res) => {
@@ -1062,7 +1064,7 @@ function savRef(id) {
     precio,
     empresa,
   };
-  const url = id ? `/api/refacciones/${id}` : "/refacciones";
+  const url = id ? `/api/refacciones/${id}` : "/api/refacciones";
   const method = id ? "PUT" : "POST";
 
   fetch(url, {
@@ -1088,7 +1090,7 @@ function savRef(id) {
     });
 }
 function delRef(id) {
-  fetch(`/refacciones/${id}`, { headers: headersAuth() })
+  fetch(`/api/refacciones/${id}`, { headers: headersAuth() })
     .then((res) => {
       if (!res.ok) throw new Error("No se pudo cargar la refacción");
       return res.json();
@@ -1515,14 +1517,14 @@ function verNota(id) {
                 <div><span style="font-size:10px;color:var(--tc);text-transform:uppercase">${m.tipo === "entrada" ? "Proveedor" : "Solicitante"}</span><p style="font-weight:600;margin-top:3px">${m.tipo === "entrada" ? m.origen : m.solicitante_nombre || "N/A"}</p></div>
                 <div><span style="font-size:10px;color:var(--tc);text-transform:uppercase">Destino</span><p style="font-weight:600;margin-top:3px">${m.tipo === "entrada" ? "Bodega Central" : m.ubicacion_nombre || "N/A"}</p></div>
                 <div><span style="font-size:10px;color:var(--tc);text-transform:uppercase">Empresa</span><p style="margin-top:3px">${m.empresa ? empBadge(m.empresa) : "N/A"}</p></div>
-                <div><span style="font-size:10px;color:var(--tc);text-transform:uppercase">Equipo</span><p style="margin-top:3px">${m.equipo_id ? "Cargando..." : "N/A"}</p></div>
-                ${
-                  m.tipo === "salida"
-                    ? `
-                    <div style="grid-column: span 2;"><span style="font-size:10px;color:var(--tc);text-transform:uppercase">Equipo asignado</span><p style="font-weight:600;margin-top:3px">${equipoNombre}</p></div>
-                `
-                    : ""
-                }
+                <div>
+    <span style="font-size:10px;color:var(--tc);text-transform:uppercase">
+        Equipo
+    </span>
+    <p style="font-weight:600;margin-top:3px">
+        ${window._equipos.find((e) => e.id === m.equipo_id)?.tipo || "N/A"}
+    </p>
+</div>
             </div>
             ${m.observaciones ? `<div style="background:var(--f);padding:10px 14px;border-radius:8px;margin-bottom:16px"><span style="font-size:10px;color:var(--tc);text-transform:uppercase">Observaciones:</span><p style="margin-top:3px;font-size:13px">${m.observaciones}</p></div>` : ""}
             <table style="width:100%;border-collapse:collapse"><thead><tr>
@@ -1612,7 +1614,7 @@ function rUbi() {
 }
 function mUbi(id) {
   if (id) {
-    fetch(`/ubicaciones/${id}`, {
+    fetch(`/api/ubicaciones/${id}`, {
       headers: headersAuth(),
     })
       .then((res) => res.json())
@@ -2169,15 +2171,16 @@ function confDelUsu(id) {
     });
 }
 
-
 // ===== REPORTES =====
 function paramsReportes(tipo = null) {
   const params = new URLSearchParams();
   const fi = document.getElementById("rep-fecha-inicio")?.value || "";
   const ff = document.getElementById("rep-fecha-fin")?.value || "";
-  const emp = empresaPermitida() || document.getElementById("rep-empresa")?.value || "";
+  const emp =
+    empresaPermitida() || document.getElementById("rep-empresa")?.value || "";
   const txt = document.getElementById("rep-busqueda")?.value.trim() || "";
-  const rep = tipo || document.getElementById("rep-tipo")?.value || "movimientos";
+  const rep =
+    tipo || document.getElementById("rep-tipo")?.value || "movimientos";
 
   params.append("tipo", rep);
   if (fi) params.append("fechaInicio", fi);
@@ -2192,9 +2195,12 @@ function rReportes() {
   const resumen = document.getElementById("rep-resumen");
   const body = document.getElementById("tb-rep");
   const head = document.getElementById("tb-rep-head");
-  if (resumen) resumen.textContent = "Usa los filtros y presiona Buscar para ver el reporte en pantalla.";
+  if (resumen)
+    resumen.textContent =
+      "Usa los filtros y presiona Buscar para ver el reporte en pantalla.";
   if (head) head.innerHTML = "";
-  if (body) body.innerHTML = `<tr><td class="tv"><i class="fa-solid fa-magnifying-glass"></i><p>Sin busqueda realizada</p></td></tr>`;
+  if (body)
+    body.innerHTML = `<tr><td class="tv"><i class="fa-solid fa-magnifying-glass"></i><p>Sin busqueda realizada</p></td></tr>`;
 }
 
 function buscarReportes() {
@@ -2203,7 +2209,8 @@ function buscarReportes() {
   const head = document.getElementById("tb-rep-head");
   const resumen = document.getElementById("rep-resumen");
 
-  if (body) body.innerHTML = `<tr><td class="tv"><i class="fa-solid fa-spinner fa-spin"></i><p>Buscando reporte...</p></td></tr>`;
+  if (body)
+    body.innerHTML = `<tr><td class="tv"><i class="fa-solid fa-spinner fa-spin"></i><p>Buscando reporte...</p></td></tr>`;
 
   fetch(`/reportes/buscar?${params.toString()}`, { headers: headersAuth() })
     .then((r) => {
@@ -2212,24 +2219,30 @@ function buscarReportes() {
     })
     .then((data) => {
       const rows = data.rows || [];
-      if (resumen) resumen.textContent = `${data.titulo || "Reporte"}: ${rows.length} registro(s) encontrado(s).`;
+      if (resumen)
+        resumen.textContent = `${data.titulo || "Reporte"}: ${rows.length} registro(s) encontrado(s).`;
 
       if (!rows.length) {
         if (head) head.innerHTML = "";
-        if (body) body.innerHTML = `<tr><td class="tv"><i class="fa-solid fa-inbox"></i><p>Sin resultados con esos filtros</p></td></tr>`;
+        if (body)
+          body.innerHTML = `<tr><td class="tv"><i class="fa-solid fa-inbox"></i><p>Sin resultados con esos filtros</p></td></tr>`;
         return;
       }
 
       const cols = Object.keys(rows[0]);
-      if (head) head.innerHTML = `<tr>${cols.map((c) => `<th>${c.replaceAll("_", " ")}</th>`).join("")}</tr>`;
+      if (head)
+        head.innerHTML = `<tr>${cols.map((c) => `<th>${c.replaceAll("_", " ")}</th>`).join("")}</tr>`;
       if (body) {
-        body.innerHTML = rows.map((row) => {
-          return `<tr>${cols.map((c) => `<td>${formatoCeldaReporte(row[c], c)}</td>`).join("")}</tr>`;
-        }).join("");
+        body.innerHTML = rows
+          .map((row) => {
+            return `<tr>${cols.map((c) => `<td>${formatoCeldaReporte(row[c], c)}</td>`).join("")}</tr>`;
+          })
+          .join("");
       }
     })
     .catch((err) => {
-      if (body) body.innerHTML = `<tr><td class="tv"><i class="fa-solid fa-circle-exclamation"></i><p>${err.message}</p></td></tr>`;
+      if (body)
+        body.innerHTML = `<tr><td class="tv"><i class="fa-solid fa-circle-exclamation"></i><p>${err.message}</p></td></tr>`;
       toast(err.message, "er", "Error");
     });
 }
@@ -2238,8 +2251,14 @@ function formatoCeldaReporte(valor, columna) {
   if (valor === null || valor === undefined) return "";
   if (columna === "empresa") return EMP[valor]?.nom || valor;
   if (columna === "fecha") return ffec(valor);
-  if (["importe", "precio", "precio_unitario", "valor_total"].includes(columna)) return fmon(valor);
-  if (columna === "tipo") return valor === "entrada" ? "Entrada" : valor === "salida" ? "Salida" : valor;
+  if (["importe", "precio", "precio_unitario", "valor_total"].includes(columna))
+    return fmon(valor);
+  if (columna === "tipo")
+    return valor === "entrada"
+      ? "Entrada"
+      : valor === "salida"
+        ? "Salida"
+        : valor;
   return String(valor);
 }
 
@@ -2281,7 +2300,9 @@ function mapAlerta(a) {
   };
 }
 function rAle() {
-  fetch("/alertas", { headers: headersAuth() })
+  fetch("/api/alertas", {
+    headers: headersAuth(),
+  })
     .then((r) => {
       if (!r.ok) throw new Error("Error al cargar alertas");
       return r.json();
@@ -2311,7 +2332,7 @@ function rAle() {
     .catch((err) => toast(err.message, "er", "Error"));
 }
 function marcarLeida(id) {
-  fetch(`/alertas/${id}/leida`, {
+  fetch(`/api/alertas/${id}/leida`, {
     method: "PUT",
     headers: headersAuth(),
   }).then(() => {
@@ -2320,7 +2341,7 @@ function marcarLeida(id) {
   });
 }
 function marcarTodas() {
-  fetch("/alertas/marcar-todas/leidas", {
+  fetch("/api/alertas/marcar-todas/leidas", {
     method: "PUT",
     headers: headersAuth(),
   }).then(() => {
@@ -2334,7 +2355,7 @@ function marcarTodas() {
 function verificarStock() {
   const params = qsConEmpresa(new URLSearchParams());
 
-  fetch(`/alertas/verificar-stock?${params.toString()}`, {
+  fetch(`/api/alertas/verificar-stock?${params.toString()}`, {
     method: "POST",
     headers: headersAuth(),
   })
