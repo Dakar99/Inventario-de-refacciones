@@ -63,9 +63,9 @@ function empresaPermitida() {
 
   if (!usr) return "";
 
-  // Bodega/admin puede ver ambas empresas
+  // Bodega ve todas las empresas
   if (usr.rol === "bodega") {
-    return localStorage.getItem("empresaActual") || "";
+    return "";
   }
 
   // Usuarios normales solo ven su empresa
@@ -647,7 +647,7 @@ function cambiarEmpresa(empresa) {
     try {
       const usr = JSON.parse(usuario);
       aplicarSesion(usr);
-      // verificarStock();
+       verificarStock();
       nav("dashboard");
     } catch (e) {
       logout();
@@ -1397,27 +1397,34 @@ function savNota(tipo) {
     document.getElementById("nt-obs").value.trim(),
   );
 
-  if (esE) {
-    formData.append("empresa", "");
+  const empresaNota =
+    empresaActual ||
+    usuarioActual()?.empresa ||
+    "tecomatlan";
+
+if (esE) {
+    formData.append("empresa", empresaNota);
     formData.append("ubicacion_destino_id", "");
     formData.append("solicitante_id", "");
     formData.append("equipo_id", "");
-  } else {
-    formData.append("empresa", document.getElementById("nt-empresa").value);
+} else {
     formData.append(
-      "ubicacion_destino_id",
-      document.getElementById("nt-destino").value,
+        "empresa",
+        document.getElementById("nt-empresa").value || empresaNota
     );
     formData.append(
-      "solicitante_id",
-      document.getElementById("nt-solicita").value,
+        "ubicacion_destino_id",
+        document.getElementById("nt-destino").value
     );
     formData.append(
-      "equipo_id",
-      document.getElementById("nt-equipo").value || "",
+        "solicitante_id",
+        document.getElementById("nt-solicita").value
     );
-  }
-
+    formData.append(
+        "equipo_id",
+        document.getElementById("nt-equipo").value || ""
+    );
+}
   // Preparar items como JSON (sin las fotos)
   const itemsData = items.map((it) => ({
     refaccion_id: it.refaccion_id,
@@ -1437,14 +1444,13 @@ function savNota(tipo) {
     }
   });
 
-  fetch("/api/movimientos", {
+ fetch("/api/movimientos", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${localStorage.getItem("token")}`,
-      // No incluir Content-Type, fetch lo pone automáticamente con FormData
+        Authorization: `Bearer ${obtenerToken()}`
     },
     body: formData,
-  })
+})
     .then((res) => {
       if (!res.ok)
         return res.json().then((err) => {
@@ -1453,14 +1459,16 @@ function savNota(tipo) {
       return res.json();
     })
     .then((mov) => {
-      cM();
-      render(S.sec);
-      toast(
+    cM();
+
+    nav(tipo === "entrada" ? "entradas" : "salidas");
+
+    toast(
         esE ? "Nota de entrada registrada" : "Solicitud de salida creada",
         "ok",
-        mov.numero_nota,
-      );
-    })
+        mov.numero_nota
+    );
+})
     .catch((err) => toast(err.message, "er", "Error"));
 }
 function cambEst(id, estado) {
@@ -2212,7 +2220,7 @@ function buscarReportes() {
   if (body)
     body.innerHTML = `<tr><td class="tv"><i class="fa-solid fa-spinner fa-spin"></i><p>Buscando reporte...</p></td></tr>`;
 
-  fetch(`/reportes/buscar?${params.toString()}`, { headers: headersAuth() })
+  fetch(`/api/reportes/buscar?${params.toString()}`, { headers: headersAuth() })
     .then((r) => {
       if (!r.ok) throw new Error("No se pudo obtener el reporte");
       return r.json();
@@ -2275,17 +2283,22 @@ function limpiarReportes() {
 }
 
 function descargarReporte(tipo, formato) {
-  const params = paramsReportes(tipo);
-  params.delete("tipo");
   const token = obtenerToken();
-  if (!token) {
-    toast("Tu sesion expiro", "er", "Error");
-    return;
-  }
+  const params = new URLSearchParams();
 
-  // Se abre en una pestaña con el token como parametro para permitir descarga directa.
+  const fechaInicio = document.getElementById("rep-fecha-inicio")?.value;
+  const fechaFin = document.getElementById("rep-fecha-fin")?.value;
+  const empresa = document.getElementById("rep-empresa")?.value;
+  const texto = document.getElementById("rep-busqueda")?.value;
+
+  if (fechaInicio) params.append("fechaInicio", fechaInicio);
+  if (fechaFin) params.append("fechaFin", fechaFin);
+  if (empresa) params.append("empresa", empresa);
+  if (texto) params.append("texto", texto);
+
   params.append("token", token);
-  window.open(`/reportes/${tipo}/${formato}?${params.toString()}`, "_blank");
+
+  window.open(`/api/reportes/${tipo}/${formato}?${params.toString()}`, "_blank");
 }
 
 // ===== ALERTAS =====
