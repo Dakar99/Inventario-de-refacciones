@@ -647,7 +647,7 @@ function cambiarEmpresa(empresa) {
     try {
       const usr = JSON.parse(usuario);
       aplicarSesion(usr);
-       verificarStock();
+      verificarStock();
       nav("dashboard");
     } catch (e) {
       logout();
@@ -1021,10 +1021,42 @@ function mostrarFormularioRefaccion(r) {
         </div>
         <div class="fr">
             <div class="fg"><label>Precio unitario (MXN)</label><input type="number" id="rf-precio" value="${r?.precio ?? 0}" min="0" step="0.01"></div>
-            <div class="fg"><label>Empresa</label><select id="rf-emp">
-                <option value="tecomatlan" ${r?.empresa === "tecomatlan" ? "selected" : ""}>Gas Tecomatlán</option>
-                <option value="paraiso" ${r?.empresa === "paraiso" ? "selected" : ""}>Gas El Paraíso</option>
-            </select></div>
+            <div class="fg">
+    <label>Empresa</label>
+
+    ${
+      usuarioActual()?.rol === "bodega"
+        ? `
+        <select id="rf-emp">
+            <option value="tecomatlan"
+                ${(r?.empresa || usuarioActual()?.empresa) === "tecomatlan" ? "selected" : ""}>
+                Gas Tecomatlán
+            </option>
+
+            <option value="paraiso"
+                ${(r?.empresa || usuarioActual()?.empresa) === "paraiso" ? "selected" : ""}>
+                Gas El Paraíso
+            </option>
+        </select>
+        `
+        : `
+        <input
+            type="text"
+            value="${
+              usuarioActual()?.empresa === "paraiso"
+                ? "Gas El Paraíso"
+                : "Gas Tecomatlán"
+            }"
+            readonly
+            style="background:#f5f5f5">
+
+        <input
+            type="hidden"
+            id="rf-emp"
+            value="${usuarioActual()?.empresa}">
+        `
+    }
+</div>
         </div>
     `;
   document.getElementById("mf").innerHTML = `
@@ -1397,34 +1429,31 @@ function savNota(tipo) {
     document.getElementById("nt-obs").value.trim(),
   );
 
-  const empresaNota =
-    empresaActual ||
-    usuarioActual()?.empresa ||
-    "tecomatlan";
+  const empresaNota = empresaActual || usuarioActual()?.empresa || "tecomatlan";
 
-if (esE) {
+  if (esE) {
     formData.append("empresa", empresaNota);
     formData.append("ubicacion_destino_id", "");
     formData.append("solicitante_id", "");
     formData.append("equipo_id", "");
-} else {
+  } else {
     formData.append(
-        "empresa",
-        document.getElementById("nt-empresa").value || empresaNota
+      "empresa",
+      document.getElementById("nt-empresa").value || empresaNota,
     );
     formData.append(
-        "ubicacion_destino_id",
-        document.getElementById("nt-destino").value
+      "ubicacion_destino_id",
+      document.getElementById("nt-destino").value,
     );
     formData.append(
-        "solicitante_id",
-        document.getElementById("nt-solicita").value
+      "solicitante_id",
+      document.getElementById("nt-solicita").value,
     );
     formData.append(
-        "equipo_id",
-        document.getElementById("nt-equipo").value || ""
+      "equipo_id",
+      document.getElementById("nt-equipo").value || "",
     );
-}
+  }
   // Preparar items como JSON (sin las fotos)
   const itemsData = items.map((it) => ({
     refaccion_id: it.refaccion_id,
@@ -1444,13 +1473,13 @@ if (esE) {
     }
   });
 
- fetch("/api/movimientos", {
+  fetch("/api/movimientos", {
     method: "POST",
     headers: {
-        Authorization: `Bearer ${obtenerToken()}`
+      Authorization: `Bearer ${obtenerToken()}`,
     },
     body: formData,
-})
+  })
     .then((res) => {
       if (!res.ok)
         return res.json().then((err) => {
@@ -1459,16 +1488,16 @@ if (esE) {
       return res.json();
     })
     .then((mov) => {
-    cM();
+      cM();
 
-    nav(tipo === "entrada" ? "entradas" : "salidas");
+      nav(tipo === "entrada" ? "entradas" : "salidas");
 
-    toast(
+      toast(
         esE ? "Nota de entrada registrada" : "Solicitud de salida creada",
         "ok",
-        mov.numero_nota
-    );
-})
+        mov.numero_nota,
+      );
+    })
     .catch((err) => toast(err.message, "er", "Error"));
 }
 function cambEst(id, estado) {
@@ -2298,7 +2327,10 @@ function descargarReporte(tipo, formato) {
 
   params.append("token", token);
 
-  window.open(`/api/reportes/${tipo}/${formato}?${params.toString()}`, "_blank");
+  window.open(
+    `/api/reportes/${tipo}/${formato}?${params.toString()}`,
+    "_blank",
+  );
 }
 
 // ===== ALERTAS =====
