@@ -18,8 +18,18 @@ const CAT = {
   pipa: { n: "Pipa", c: "bd-pipa" },
   planta: { n: "Planta", c: "bd-planta" },
   trailer: { n: "Trailer", c: "bd-trailer" },
-  tanque_carburacion: { n: "Tanque de Carburacion", c: "bd-tanque" },
-  valvulas: { n: "Valvulas", c: "bd-valvulas" },
+
+  cilindrera: {
+    n: "Cilindrera",
+    c: "bd-cilindrera",
+  },
+
+  tanque_carburacion: {
+    n: "Tanque de Carburación",
+    c: "bd-tanque",
+  },
+
+  valvulas: { n: "Válvulas", c: "bd-valvulas" },
   mangueras: { n: "Mangueras", c: "bd-mangueras" },
   otro: { n: "Otro", c: "bd-otro" },
 };
@@ -732,23 +742,36 @@ function login() {
 function mostrarMenuPorRol(rol) {
   const usr = usuarioActual();
 
-  const adminItems = [
+  const soloBodega = [
     "ubicaciones",
     "usuarios",
     "alertas",
     "equipos",
-    "reportes",
   ];
+
   const menuItems = document.querySelectorAll(".ni");
 
   menuItems.forEach((item) => {
     const sec = item.dataset.s;
 
-    if (adminItems.includes(sec)) {
+    // Solo el bodeguero puede ver estas opciones
+    if (soloBodega.includes(sec)) {
       item.style.display = rol === "bodega" ? "flex" : "none";
-    } else if (rol === "solicitante" && sec === "entradas") {
+    }
+
+    // Reportes para bodeguero y encargado
+    else if (sec === "reportes") {
+      item.style.display = ["bodega", "encargado"].includes(rol)
+        ? "flex"
+        : "none";
+    }
+
+    // El solicitante no ve Entradas
+    else if (rol === "solicitante" && sec === "entradas") {
       item.style.display = "none";
-    } else {
+    }
+
+    else {
       item.style.display = "flex";
     }
   });
