@@ -742,12 +742,7 @@ function login() {
 function mostrarMenuPorRol(rol) {
   const usr = usuarioActual();
 
-  const soloBodega = [
-    "ubicaciones",
-    "usuarios",
-    "alertas",
-    "equipos",
-  ];
+  const soloBodega = ["ubicaciones", "usuarios", "alertas", "equipos"];
 
   const menuItems = document.querySelectorAll(".ni");
 
@@ -769,9 +764,7 @@ function mostrarMenuPorRol(rol) {
     // El solicitante no ve Entradas
     else if (rol === "solicitante" && sec === "entradas") {
       item.style.display = "none";
-    }
-
-    else {
+    } else {
       item.style.display = "flex";
     }
   });
@@ -1276,6 +1269,10 @@ function rSal() {
 // MODAL NOTA
 function mNota(tipo) {
   const esE = tipo === "entrada";
+
+  // Guardar el tipo de nota para addFila()
+  window._tipoNota = tipo;
+
   document.getElementById("mt").textContent = esE
     ? "Nueva Nota de Entrada"
     : "Nueva Nota de Salida (Pedimento)";
@@ -1284,88 +1281,292 @@ function mNota(tipo) {
   const queryEmpresa = paramsEmpresa.toString();
 
   Promise.all([
-    fetch(`/api/refacciones?${queryEmpresa}`, { headers: headersAuth() }).then(
-      (r) => r.json(),
-    ),
-    fetch(`/api/ubicaciones?${queryEmpresa}`, { headers: headersAuth() }).then(
-      (r) => r.json(),
-    ),
-    fetch(`/api/usuarios?${queryEmpresa}`, { headers: headersAuth() }).then(
-      (r) => r.json(),
-    ),
-    fetch(`/api/equipos?${queryEmpresa}`, { headers: headersAuth() }).then(
-      (r) => r.json(),
-    ),
+    fetch(`/api/refacciones?${queryEmpresa}`, {
+      headers: headersAuth(),
+    }).then((r) => r.json()),
+
+    fetch(`/api/ubicaciones?${queryEmpresa}`, {
+      headers: headersAuth(),
+    }).then((r) => r.json()),
+
+    fetch(`/api/usuarios?${queryEmpresa}`, {
+      headers: headersAuth(),
+    }).then((r) => r.json()),
+
+    fetch(`/api/equipos?${queryEmpresa}`, {
+      headers: headersAuth(),
+    }).then((r) => r.json()),
   ])
     .then(([refacciones, ubicaciones, usuarios, equipos]) => {
       const optsR = refacciones
         .map(
-          (r) =>
-            `<option value="${r.id}">${r.codigo} - ${r.nombre} (Stock: ${r.cantidad}) [${EMP[r.empresa]?.nom || r.empresa}]</option>`,
+          (r) => `
+            <option
+              value="${r.id}"
+              data-precio="${Number(r.precio || 0)}"
+            >
+              ${r.codigo} - ${r.nombre} (Stock: ${r.cantidad})
+            </option>
+          `,
         )
         .join("");
 
       let html = "";
+
       if (esE) {
-        html += `<div class="fg"><label>Proveedor / Origen</label><input type="text" id="nt-origen" placeholder="Ej: Proveedor: Válvulas del Norte"></div>`;
+        html += `
+          <div class="fg">
+            <label>Proveedor / Origen</label>
+            <input
+              type="text"
+              id="nt-origen"
+              placeholder="Ej: Proveedor: Válvulas del Norte"
+            >
+          </div>
+        `;
       } else {
         const optsU = ubicaciones
           .map(
-            (u) =>
-              `<option value="${u.id}">${u.nombre} (${EMP[u.empresa]?.nom || u.empresa})</option>`,
+            (u) => `
+              <option value="${u.id}">
+                ${u.nombre} (${EMP[u.empresa]?.nom || u.empresa})
+              </option>
+            `,
           )
           .join("");
-        const usuariosFiltrados = usuarios.filter((u) => u.rol !== "bodega");
+
+        const usuariosFiltrados = usuarios.filter(
+          (u) => u.rol !== "bodega",
+        );
+
         const optsUs = usuariosFiltrados
           .map(
-            (u) =>
-              `<option value="${u.id}">${u.nombre} (${EMP[u.empresa]?.nom || u.empresa})</option>`,
+            (u) => `
+              <option value="${u.id}">
+                ${u.nombre} (${EMP[u.empresa]?.nom || u.empresa})
+              </option>
+            `,
           )
           .join("");
 
-        html += `<div class="fr">
-                <div class="fg"><label>Empresa que solicita</label><select id="nt-empresa"><option value="tecomatlan">Gas Tecomatlán</option><option value="paraiso">Gas El Paraíso</option></select></div>
-                <div class="fg"><label>Quien solicita</label><select id="nt-solicita">${optsUs}</select></div>
-            </div>`;
-        html += `<div class="fg"><label>Ubicación destino</label><select id="nt-destino" onchange="cargarEquiposPorUbicacion()">${optsU}</select></div>`;
-        html += `<div class="fg"><label>Equipo (Pipa, Trailer, etc.)</label>
-                <select id="nt-equipo">
-                    <option value="">-- Seleccionar equipo --</option>
-                </select>
-            </div>`;
+        html += `
+          <div class="fr">
+            <div class="fg">
+              <label>Empresa que solicita</label>
+              <select id="nt-empresa">
+                <option value="tecomatlan">Gas Tecomatlán</option>
+                <option value="paraiso">Gas El Paraíso</option>
+              </select>
+            </div>
+
+            <div class="fg">
+              <label>Quién solicita</label>
+              <select id="nt-solicita">
+                ${optsUs}
+              </select>
+            </div>
+          </div>
+        `;
+
+        html += `
+          <div class="fg">
+            <label>Ubicación destino</label>
+            <select
+              id="nt-destino"
+              onchange="cargarEquiposPorUbicacion()"
+            >
+              ${optsU}
+            </select>
+          </div>
+        `;
+
+        html += `
+          <div class="fg">
+            <label>Equipo (Pipa, Trailer, etc.)</label>
+            <select id="nt-equipo">
+              <option value="">-- Seleccionar equipo --</option>
+            </select>
+          </div>
+        `;
       }
 
-      // Sección de items con tipo de refacción y foto
-      html += `<div style="margin-bottom:14px"><label style="display:block;font-weight:600;font-size:10px;color:var(--tc);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Refacciones</label>
-            <div id="nt-items">
-                <div class="nt-row" style="display:grid;grid-template-columns:1.5fr 0.8fr 0.8fr 0.8fr 1fr 0.8fr 36px;gap:6px;margin-bottom:6px;align-items:end">
-                    <div><select class="nt-r" style="width:100%;padding:7px;border:2px solid var(--b);border-radius:8px;font-size:12px">${optsR}</select></div>
-                    <div><input type="number" class="nt-c" value="1" min="1" style="width:100%;padding:7px;border:2px solid var(--b);border-radius:8px;font-size:12px" placeholder="Cant."></div>
-                    <div><input type="number" class="nt-p" value="0" min="0" step="0.01" style="width:100%;padding:7px;border:2px solid var(--b);border-radius:8px;font-size:12px" placeholder="Precio"></div>
-                    <div><select class="nt-tipo" style="width:100%;padding:7px;border:2px solid var(--b);border-radius:8px;font-size:12px">
-                        <option value="nueva">Nueva</option>
-                        <option value="usada">Usada</option>
-                    </select></div>
-                    <div><input type="file" class="nt-foto" accept="image/*" capture="environment" style="width:100%;padding:4px;border:2px solid var(--b);border-radius:8px;font-size:11px"></div>
-                    <button class="bi dg" onclick="this.closest('.nt-row').remove()"><i class="fa-solid fa-xmark"></i></button>
-                </div>
-            </div>
-            <button class="btn btn-s btn-sm" onclick="addFila()"><i class="fa-solid fa-plus"></i> Agregar refacción</button>
-        </div>`;
+      html += `
+        <div style="margin-bottom:14px">
+          <label
+            style="
+              display:block;
+              font-weight:600;
+              font-size:10px;
+              color:var(--tc);
+              margin-bottom:6px;
+              text-transform:uppercase;
+              letter-spacing:.5px
+            "
+          >
+            Refacciones
+          </label>
 
-      html += `<div class="fg"><label>Notas / Observaciones</label><textarea id="nt-obs" placeholder="Observaciones..."></textarea></div>`;
+          <div id="nt-items">
+            <div
+              class="nt-row"
+              style="
+                display:grid;
+                grid-template-columns:1.5fr 0.8fr 0.8fr 0.8fr 1fr 0.8fr 36px;
+                gap:6px;
+                margin-bottom:6px;
+                align-items:end
+              "
+            >
+              <div>
+                <select
+                  class="nt-r"
+                  onchange="actualizarPrecio(this)"
+                  style="
+                    width:100%;
+                    padding:7px;
+                    border:2px solid var(--b);
+                    border-radius:8px;
+                    font-size:12px
+                  "
+                >
+                  ${optsR}
+                </select>
+              </div>
+
+              <div>
+                <input
+                  type="number"
+                  class="nt-c"
+                  value="1"
+                  min="1"
+                  style="
+                    width:100%;
+                    padding:7px;
+                    border:2px solid var(--b);
+                    border-radius:8px;
+                    font-size:12px
+                  "
+                  placeholder="Cant."
+                >
+              </div>
+
+              <div>
+                <input
+                  type="number"
+                  class="nt-p"
+                  value="0"
+                  min="0"
+                  step="0.01"
+                  ${esE ? "" : "readonly"}
+                  style="
+                    width:100%;
+                    padding:7px;
+                    border:2px solid var(--b);
+                    border-radius:8px;
+                    font-size:12px;
+                    ${
+                      esE
+                        ? ""
+                        : "background:#f5f5f5;cursor:not-allowed;"
+                    }
+                  "
+                  placeholder="Precio"
+                >
+              </div>
+
+              <div>
+                <select
+                  class="nt-tipo"
+                  style="
+                    width:100%;
+                    padding:7px;
+                    border:2px solid var(--b);
+                    border-radius:8px;
+                    font-size:12px
+                  "
+                >
+                  <option value="nueva">Nueva</option>
+                  <option value="usada">Usada</option>
+                </select>
+              </div>
+
+              <div>
+                <input
+                  type="file"
+                  class="nt-foto"
+                  accept="image/*"
+                  capture="environment"
+                  style="
+                    width:100%;
+                    padding:4px;
+                    border:2px solid var(--b);
+                    border-radius:8px;
+                    font-size:11px
+                  "
+                >
+              </div>
+
+              <button
+                class="bi dg"
+                onclick="this.closest('.nt-row').remove()"
+              >
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          </div>
+
+          <button
+            class="btn btn-s btn-sm"
+            onclick="addFila()"
+          >
+            <i class="fa-solid fa-plus"></i>
+            Agregar refacción
+          </button>
+        </div>
+      `;
+
+      html += `
+        <div class="fg">
+          <label>Notas / Observaciones</label>
+          <textarea
+            id="nt-obs"
+            placeholder="Observaciones..."
+          ></textarea>
+        </div>
+      `;
 
       document.getElementById("mb").innerHTML = html;
-      document.getElementById("mf").innerHTML =
-        `<button class="btn btn-s" onclick="cM()">Cancelar</button><button class="btn btn-${esE ? "e" : "p"}" onclick="savNota('${tipo}')"><i class="fa-solid fa-save"></i> ${esE ? "Registrar Entrada" : "Enviar Salida"}</button>`;
-      oM();
 
-      // Guardar lista de equipos en una variable global para usarla en el onchange
+      document.getElementById("mf").innerHTML = `
+        <button class="btn btn-s" onclick="cM()">
+          Cancelar
+        </button>
+
+        <button
+          class="btn btn-${esE ? "e" : "p"}"
+          onclick="savNota('${tipo}')"
+        >
+          <i class="fa-solid fa-save"></i>
+          ${esE ? "Registrar Entrada" : "Enviar Salida"}
+        </button>
+      `;
+
       window._refacciones = refacciones;
       window._equipos = equipos;
+
+      oM();
+
+      document.querySelectorAll(".nt-r").forEach((select) => {
+        actualizarPrecio(select);
+      });
     })
     .catch((err) => {
-      toast("Error al cargar datos para el formulario", "er", "Error");
+      toast(
+        "Error al cargar datos para el formulario",
+        "er",
+        "Error",
+      );
+
       console.error(err);
     });
 }
@@ -1384,29 +1585,108 @@ function cargarEquiposPorUbicacion() {
 }
 function addFila() {
   const ref = window._refacciones || [];
+  const esEntrada = window._tipoNota === "entrada";
+
   const opts = ref
     .map(
-      (r) =>
-        `<option value="${r.id}">${r.codigo} - ${r.nombre} (Stock: ${r.cantidad})</option>`,
+      (r) => `
+        <option
+          value="${r.id}"
+          data-precio="${Number(r.precio || 0)}"
+        >
+          ${r.codigo} - ${r.nombre} (Stock: ${r.cantidad})
+        </option>
+      `,
     )
     .join("");
+
   const d = document.createElement("div");
+
   d.className = "nt-row";
+
   d.style.cssText =
     "display:grid;grid-template-columns:1.5fr 0.8fr 0.8fr 0.8fr 1fr 0.8fr 36px;gap:6px;margin-bottom:6px;align-items:end";
+
   d.innerHTML = `
-        <div><select class="nt-r" style="width:100%;padding:7px;border:2px solid var(--b);border-radius:8px;font-size:12px">${opts}</select></div>
-        <div><input type="number" class="nt-c" value="1" min="1" style="width:100%;padding:7px;border:2px solid var(--b);border-radius:8px;font-size:12px"></div>
-        <div><input type="number" class="nt-p" value="0" min="0" step="0.01" style="width:100%;padding:7px;border:2px solid var(--b);border-radius:8px;font-size:12px"></div>
-        <div><select class="nt-tipo" style="width:100%;padding:7px;border:2px solid var(--b);border-radius:8px;font-size:12px">
-            <option value="nueva">Nueva</option>
-            <option value="usada">Usada</option>
-        </select></div>
-        <div><input type="file" class="nt-foto" accept="image/*" style="width:100%;padding:7px;border:2px solid var(--b);border-radius:8px;font-size:12px"></div>
-        <button class="bi dg" onclick="this.closest('.nt-row').remove()"><i class="fa-solid fa-xmark"></i></button>
-    `;
+    <div>
+      <select
+        class="nt-r"
+        onchange="actualizarPrecio(this)"
+        style="width:100%;padding:7px;border:2px solid var(--b);border-radius:8px;font-size:12px"
+      >
+        ${opts}
+      </select>
+    </div>
+
+    <div>
+      <input
+        type="number"
+        class="nt-c"
+        value="1"
+        min="1"
+        style="width:100%;padding:7px;border:2px solid var(--b);border-radius:8px;font-size:12px"
+      >
+    </div>
+
+    <div>
+      <input
+        type="number"
+        class="nt-p"
+        value="0"
+        min="0"
+        step="0.01"
+        ${esEntrada ? "" : "readonly"}
+        style="
+          width:100%;
+          padding:7px;
+          border:2px solid var(--b);
+          border-radius:8px;
+          font-size:12px;
+          ${
+            esEntrada
+              ? ""
+              : "background:#f5f5f5;cursor:not-allowed;"
+          }
+        "
+      >
+    </div>
+
+    <div>
+      <select class="nt-tipo">
+        <option value="nueva">Nueva</option>
+        <option value="usada">Usada</option>
+      </select>
+    </div>
+
+    <div>
+      <input
+        type="file"
+        class="nt-foto"
+        accept="image/*"
+      >
+    </div>
+
+    <button
+      class="bi dg"
+      onclick="this.closest('.nt-row').remove()"
+    >
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  `;
+
   document.getElementById("nt-items").appendChild(d);
+
+  actualizarPrecio(d.querySelector(".nt-r"));
 }
+// ESTA FUNCIÓN VA FUERA DE addFila()
+function actualizarPrecio(select) {
+  const fila = select.closest(".nt-row");
+  const inputPrecio = fila.querySelector(".nt-p");
+  const opcion = select.options[select.selectedIndex];
+
+  inputPrecio.value = Number(opcion?.dataset.precio || 0).toFixed(2);
+}
+
 function savNota(tipo) {
   const esE = tipo === "entrada";
   const origen = esE
@@ -1417,31 +1697,52 @@ function savNota(tipo) {
     return;
   }
 
-  const filas = document.querySelectorAll(".nt-row");
-  const items = [];
-  let err = false;
-  filas.forEach((f) => {
-    const refId = f.querySelector(".nt-r").value;
-    const cantidad = parseInt(f.querySelector(".nt-c").value) || 0;
-    const precio = parseFloat(f.querySelector(".nt-p").value) || 0;
-    const tipoRefaccion = f.querySelector(".nt-tipo").value;
-    const fotoFile = f.querySelector(".nt-foto").files[0];
-    if (cantidad <= 0) {
-      err = true;
-      return;
-    }
-    items.push({
-      refaccion_id: refId,
-      cantidad,
-      precio_unitario: precio,
-      tipo_refaccion: tipoRefaccion,
-      foto: fotoFile, // guardamos el archivo para subirlo después
-    });
-  });
-  if (!items.length || err) {
-    toast("Agrega al menos una refacción con cantidad válida", "er", "Error");
+const filas = document.querySelectorAll(".nt-row");
+const items = [];
+let err = false;
+
+filas.forEach((f) => {
+  const refId = f.querySelector(".nt-r").value;
+  const cantidad = Number(f.querySelector(".nt-c").value);
+  const precio = Number(f.querySelector(".nt-p").value);
+  const tipoRefaccion = f.querySelector(".nt-tipo").value;
+  const fotoFile = f.querySelector(".nt-foto").files[0];
+
+  if (!refId) {
+    err = true;
     return;
   }
+
+  if (!Number.isFinite(cantidad) || cantidad <= 0) {
+    err = true;
+    return;
+  }
+
+  // En entradas el precio nuevo debe ser válido
+  if (esE && (!Number.isFinite(precio) || precio <= 0)) {
+    err = true;
+    return;
+  }
+
+  items.push({
+    refaccion_id: refId,
+    cantidad,
+    precio_unitario: precio,
+    tipo_refaccion: tipoRefaccion,
+    foto: fotoFile,
+  });
+});
+
+if (!items.length || err) {
+  toast(
+    esE
+      ? "Selecciona una refacción e indica cantidad y precio válidos"
+      : "Agrega al menos una refacción con cantidad válida",
+    "er",
+    "Error",
+  );
+  return;
+}
 
   // Construir FormData
   const formData = new FormData();
