@@ -1,23 +1,5 @@
 const express = require("express");
 const router = express.Router();
-<<<<<<< HEAD
-const { pool } = require("../config/db");
-const { verificarToken } = require("../middlewares/auth");
-
-// ENDPOINTS DE REFACCIONES
-
-// GET /api/refacciones - Listar refacciones (con filtros)
-router.get("/api/refacciones", verificarToken, async (req, res) => {
-  try {
-    const { categoria, busqueda } = req.query;
-    let empresa = req.query.empresa;
-
-    if (req.usuario.rol !== "bodega") {
-      empresa = req.usuario.empresa;
-    }
-
-    let query = "SELECT * FROM refacciones WHERE 1=1";
-=======
 
 const { pool } = require("../config/db");
 const { verificarToken } = require("../middlewares/auth");
@@ -94,7 +76,6 @@ router.get("/refacciones", verificarToken, async (req, res) => {
       WHERE 1 = 1
     `;
 
->>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     const params = [];
     let idx = 1;
 
@@ -111,9 +92,6 @@ router.get("/refacciones", verificarToken, async (req, res) => {
     }
 
     if (busqueda) {
-<<<<<<< HEAD
-      query += ` AND (nombre ILIKE $${idx} OR codigo ILIKE $${idx} OR para_que_es ILIKE $${idx} OR descripcion ILIKE $${idx})`;
-=======
       query += `
         AND (
           nombre ILIKE $${idx}
@@ -123,7 +101,6 @@ router.get("/refacciones", verificarToken, async (req, res) => {
         )
       `;
 
->>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
       params.push(`%${busqueda}%`);
       idx++;
     }
@@ -131,36 +108,6 @@ router.get("/refacciones", verificarToken, async (req, res) => {
     query += " ORDER BY nombre ASC";
 
     const result = await pool.query(query, params);
-<<<<<<< HEAD
-    res.json(result.rows);
-  } catch (error) {
-    console.error("Error en GET /refacciones:", error);
-    res.status(500).json({ error: "Error al obtener refacciones" });
-  }
-});
-// GET /api/refacciones/:id - Obtener una refacción por ID
-router.get("/api/refacciones/:id", verificarToken, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const result = await pool.query("SELECT * FROM refacciones WHERE id = $1", [
-      id,
-    ]);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Refacción no encontrada" });
-    }
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error("Error en GET /refacciones/:id:", error);
-    res.status(500).json({ error: "Error al obtener la refacción" });
-  }
-});
-// POST /api/refacciones - Crear nueva refacción (solo bodega)
-router.post("/api/refacciones", verificarToken, async (req, res) => {
-  try {
-    // Verificar rol
-    if (req.usuario.rol !== "bodega") {
-      return res.status(403).json({ error: "No autorizado" });
-=======
 
     return res.json(result.rows);
   } catch (error) {
@@ -234,7 +181,6 @@ router.post("/refacciones", verificarToken, async (req, res) => {
       return res.status(403).json({
         error: "No tienes autorización para registrar refacciones",
       });
->>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     }
 
     const {
@@ -246,39 +192,6 @@ router.post("/refacciones", verificarToken, async (req, res) => {
       cantidad,
       stock_minimo,
       precio,
-<<<<<<< HEAD
-      empresa,
-    } = req.body;
-    if (!codigo || !nombre || !categoria || !empresa) {
-      return res.status(400).json({
-        error: "Faltan campos obligatorios: codigo, nombre, categoria, empresa",
-      });
-    }
-
-    // Verificar que el código no exista
-    const exist = await pool.query(
-      "SELECT id FROM refacciones WHERE codigo = $1",
-      [codigo],
-    );
-    if (exist.rows.length > 0) {
-      return res.status(400).json({ error: "El código ya existe" });
-    }
-
-    const result = await pool.query(
-      `INSERT INTO refacciones 
-            (codigo, nombre, descripcion, categoria, para_que_es, cantidad, stock_minimo, precio, empresa, fecha_registro)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_DATE)
-            RETURNING *`,
-      [
-        codigo,
-        nombre,
-        descripcion,
-        categoria,
-        para_que_es,
-        cantidad || 0,
-        stock_minimo || 2,
-        precio || 0,
-=======
     } = req.body;
 
     const empresa = empresaDelUsuario(
@@ -373,27 +286,10 @@ router.post("/refacciones", verificarToken, async (req, res) => {
         cantidadNumerica,
         stockMinimoNumerico,
         precioNumerico,
->>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
         empresa,
       ],
     );
 
-<<<<<<< HEAD
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error("Error en POST /refacciones:", error);
-    res.status(500).json({ error: "Error al crear refacción" });
-  }
-});
-// PUT /api/refacciones/:id - Actualizar refacción (solo bodega)
-router.put("/api/refacciones/:id", verificarToken, async (req, res) => {
-  try {
-    if (req.usuario.rol !== "bodega") {
-      return res.status(403).json({ error: "No autorizado" });
-    }
-
-    const { id } = req.params;
-=======
     await enviarAlertaStock(result.rows[0]);
 
     return res.status(201).json(result.rows[0]);
@@ -428,7 +324,6 @@ router.put("/refacciones/:id", verificarToken, async (req, res) => {
     const { id } = req.params;
     const esBodega = req.usuario.rol === "bodega";
 
->>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     const {
       nombre,
       descripcion,
@@ -440,10 +335,6 @@ router.put("/refacciones/:id", verificarToken, async (req, res) => {
       empresa,
     } = req.body;
 
-<<<<<<< HEAD
-    // Construir dinámicamente la actualización (solo los campos que vienen)
-    let query = "UPDATE refacciones SET ";
-=======
     if (
       empresa !== undefined &&
       esBodega &&
@@ -454,23 +345,11 @@ router.put("/refacciones/:id", verificarToken, async (req, res) => {
       });
     }
 
->>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     const fields = [];
     const values = [];
     let idx = 1;
 
     if (nombre !== undefined) {
-<<<<<<< HEAD
-      fields.push(`nombre = $${idx}`);
-      values.push(nombre);
-      idx++;
-    }
-    if (descripcion !== undefined) {
-      fields.push(`descripcion = $${idx}`);
-      values.push(descripcion);
-      idx++;
-    }
-=======
       if (!String(nombre).trim()) {
         return res.status(400).json({
           error: "El nombre no puede estar vacío",
@@ -488,35 +367,11 @@ router.put("/refacciones/:id", verificarToken, async (req, res) => {
       idx++;
     }
 
->>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     if (categoria !== undefined) {
       fields.push(`categoria = $${idx}`);
       values.push(categoria);
       idx++;
     }
-<<<<<<< HEAD
-    if (para_que_es !== undefined) {
-      fields.push(`para_que_es = $${idx}`);
-      values.push(para_que_es);
-      idx++;
-    }
-    if (cantidad !== undefined) {
-      fields.push(`cantidad = $${idx}`);
-      values.push(cantidad);
-      idx++;
-    }
-    if (stock_minimo !== undefined) {
-      fields.push(`stock_minimo = $${idx}`);
-      values.push(stock_minimo);
-      idx++;
-    }
-    if (precio !== undefined) {
-      fields.push(`precio = $${idx}`);
-      values.push(precio);
-      idx++;
-    }
-    if (empresa !== undefined) {
-=======
 
     if (para_que_es !== undefined) {
       fields.push(`para_que_es = $${idx}`);
@@ -571,57 +426,12 @@ router.put("/refacciones/:id", verificarToken, async (req, res) => {
 
     // Solamente bodega puede cambiar la empresa.
     if (empresa !== undefined && esBodega) {
->>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
       fields.push(`empresa = $${idx}`);
       values.push(empresa);
       idx++;
     }
 
     if (fields.length === 0) {
-<<<<<<< HEAD
-      return res.status(400).json({ error: "No hay campos para actualizar" });
-    }
-
-    query += fields.join(", ");
-    query += ` WHERE id = $${idx} RETURNING *`;
-    values.push(id);
-
-    const result = await pool.query(query, values);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Refacción no encontrada" });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error("Error en PUT /refacciones:", error);
-    res.status(500).json({ error: "Error al actualizar refacción" });
-  }
-});
-// DELETE /api/refacciones/:id - Eliminar refacción (solo bodega)
-router.delete("/api/refacciones/:id", verificarToken, async (req, res) => {
-  try {
-    if (req.usuario.rol !== "bodega") {
-      return res.status(403).json({ error: "No autorizado" });
-    }
-
-    const { id } = req.params;
-    const result = await pool.query(
-      "DELETE FROM refacciones WHERE id = $1 RETURNING id",
-      [id],
-    );
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Refacción no encontrada" });
-    }
-
-    res.json({ message: "Refacción eliminada" });
-  } catch (error) {
-    console.error("Error en DELETE /refacciones:", error);
-    res.status(500).json({ error: "Error al eliminar refacción" });
-  }
-});
-
-module.exports = router;
-=======
       return res.status(400).json({
         error: "No hay campos permitidos para actualizar",
       });
@@ -735,4 +545,3 @@ router.delete("/refacciones/:id", verificarToken, async (req, res) => {
 });
 
 module.exports = router;
->>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
