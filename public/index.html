@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Bodega Central - Inventario de Refacciones</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+        <link
+            href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Source+Sans+3:wght@300;400;500;600;700&display=swap"
+            rel="stylesheet">
+        <link rel="stylesheet" href="css/styles.css">
+    </head>
+    <body>
+
+        <!-- ===== LOGIN ===== -->
+        <div id="pantalla-login">
+            <div class="login-card">
+                <div class="login-logos">
+                    <img src="logo-tecomatlan.png" alt="Gas Tecomatlán">
+                    <div class="sep"></div>
+                    <img src="logo-paraiso.png" alt="Gas El Paraíso">
+                </div>
+                <h1
+                    style="font-size:22px;font-weight:900;text-align:center;margin-bottom:4px">Bodega
+                    Central</h1>
+                <p
+                    style="text-align:center;color:var(--tc);font-size:13px;margin-bottom:24px">Inventario
+                    de Refacciones</p>
+                <div class="ig"><label>Usuario</label><i
+                        class="fa-solid fa-user ii"></i><input type="text"
+                        id="l-user" placeholder="Tu usuario"
+                        autocomplete="off"></div>
+                <div class="ig"><label>Contraseña</label><i
+                        class="fa-solid fa-lock ii"></i><input type="password"
+                        id="l-pass" placeholder="Tu contraseña"></div>
+                <button class="btn-login" onclick="login()">Iniciar
+                    Sesión</button>
+                <p
+                    style="text-align:center;margin-top:16px;font-size:11px;color:var(--tc)">Usuario:
+                    <strong>?</strong> / Password: <strong>?</strong></p>
+            </div>
+        </div>
+
+        <!-- ===== APP ===== -->
+        <div id="app-principal">
+            <div class="sov" id="sov" onclick="cSidebar()"></div>
+            <aside class="sidebar" id="sidebar">
+                <div class="sidebar-hd">
+                    <img id="sb-logo" src="logo-tecomatlan.png" alt>
+                    <div class="ne" id="sb-nom">Bodega Central</div>
+                    <div class="se">Inventario de Refacciones</div>
+                </div>
+                <nav class="sn">
+                    <div class="ns">Empresa</div>
+
+                    <div class="ni" id="emp-tec"
+                        onclick="cambiarEmpresa('tecomatlan')">
+                        <i class="fa-solid fa-fire"></i>
+                        Gas Tecomatlán
+                    </div>
+
+                    <div class="ni" id="emp-par"
+                        onclick="cambiarEmpresa('paraiso')">
+                        <i class="fa-solid fa-fire"></i>
+                        Gas El Paraíso
+                    </div>
+                    <div class="ns">Principal</div>
+                    <div class="ni act" data-s="dashboard"
+                        onclick="nav('dashboard')"><i
+                            class="fa-solid fa-gauge-high"></i>Dashboard</div>
+                    <div class="ns">Operaciones</div>
+                    <div class="ni" data-s="inventario"
+                        onclick="nav('inventario')"><i
+                            class="fa-solid fa-boxes-stacked"></i>Inventario</div>
+                    <div class="ni" data-s="entradas"
+                        onclick="nav('entradas')"><i
+                            class="fa-solid fa-arrow-right-to-bracket"></i>Entradas</div>
+                    <div class="ni" data-s="salidas" onclick="nav('salidas')"><i
+                            class="fa-solid fa-arrow-right-from-bracket"></i>Salidas
+                        / Pedimentos<span class="nb" id="nb-sal"
+                            style="display:none">0</span></div>
+                    <div class="ns">Administración</div>
+                    <div class="ni" data-s="ubicaciones"
+                        onclick="nav('ubicaciones')"><i
+                            class="fa-solid fa-building"></i>Ubicaciones</div>
+                    <div class="ni" data-s="equipos" onclick="nav('equipos')"><i
+                            class="fa-solid fa-truck"></i>Equipos</div>
+                    <div class="ni" data-s="usuarios"
+                        onclick="nav('usuarios')"><i
+                            class="fa-solid fa-users"></i>Usuarios</div>
+                    <div class="ns">Reportes</div>
+                    <div class="ni" data-s="reportes"
+                        onclick="nav('reportes')"><i
+                            class="fa-solid fa-chart-column"></i>Reportes</div>
+                    <div class="ni" data-s="alertas" onclick="nav('alertas')"><i
+                            class="fa-solid fa-bell"></i>Alertas<span class="nb"
+                            id="nb-al" style="display:none">0</span></div>
+                </nav>
+            </aside>
+            <main class="mc">
+                <header class="tb">
+                    <div class="tb-l">
+                        <button class="btn-mm" onclick="oSidebar()"><i
+                                class="fa-solid fa-bars"></i></button>
+                        <div class="tb-t"><h2 id="tt">Dashboard</h2><p
+                                id="ts">Resumen general</p></div>
+                    </div>
+                    <div class="tb-r">
+                        <button class="btn-at" onclick="nav('alertas')"><i
+                                class="fa-solid fa-bell"></i><span class="ba"
+                                id="ba-al"
+                                style="display:none">0</span></button>
+                        <div class="ui"><div class="ua" id="av">BC</div><div
+                                class="ud"><div class="un"
+                                    id="un">Bodeguero</div><div class="ur"
+                                    id="ur">Administrador</div></div></div>
+                        <button class="btn-cs" onclick="logout()"><i
+                                class="fa-solid fa-right-from-bracket"></i></button>
+                    </div>
+                </header>
+                <div class="ct">
+
+                    <!-- DASHBOARD -->
+                    <section class="sec act" id="s-dashboard">
+                        <div class="kg" id="kpi-g"></div>
+                        <div class="dg">
+                            <div class="tc"><div class="th"><h3><i
+                                            class="fa-solid fa-clock-rotate-left"
+                                            style="margin-right:6px;color:var(--p)"></i>Ultimos
+                                        Movimientos</h3></div><div
+                                    class="tw"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Nota</th><th>Destino</th><th>Estado</th></tr></thead><tbody
+                                            id="tb-mov"></tbody></table></div></div>
+                            <div class="tc"><div class="th"><h3><i
+                                            class="fa-solid fa-triangle-exclamation"
+                                            style="margin-right:6px;color:var(--d)"></i>Stock
+                                        Bajo</h3></div><div
+                                    class="tw"><table><thead><tr><th>Codigo</th><th>Refaccion</th><th>Cant.</th><th>Categoria</th></tr></thead><tbody
+                                            id="tb-sto"></tbody></table></div></div>
+                        </div>
+                    </section>
+
+                    <!-- INVENTARIO -->
+                    <section class="sec" id="s-inventario">
+                        <div class="tc"><div class="th"><h3>Catalogo de
+                                    Refacciones</h3><div class="ta">
+                                    <div class="buscador"><i
+                                            class="fa-solid fa-magnifying-glass"></i><input
+                                            type="text" placeholder="Buscar..."
+                                            id="b-inv" oninput="rInv()"></div>
+                                    <select class="fs" id="f-cat"
+                                        onchange="rInv()"><option value>Todas
+                                            las categorias</option><option
+                                            value="pipa">Pipa</option><option
+                                            value="planta">Planta</option><option
+                                            value="trailer">Trailer</option><option
+                                            value="tanque_carburacion">Tanque de
+                                            Carburacion</option><option
+                                            value="valvulas">Valvulas</option><option
+                                            value="mangueras">Mangueras</option><option
+                                            value="otro">Otro</option></select>
+                                    <select class="fs" id="f-emp"
+                                        onchange="rInv()"><option value>Ambas
+                                            empresas</option><option
+                                            value="tecomatlan">Gas
+                                            Tecomatlan</option><option
+                                            value="paraiso">Gas El
+                                            Paraiso</option></select>
+                                    <button class="btn btn-p"
+                                        onclick="mRef()"><i
+                                            class="fa-solid fa-plus"></i> Nueva
+                                        Refaccion</button>
+                                </div></div><div
+                                class="tw"><table><thead><tr><th>Codigo</th><th>Nombre</th><th>Empresa</th><th>Categoria</th><th>Para
+                                                que
+                                                es</th><th>Cant.</th><th>Precio</th><th>Stock</th><th>Acc.</th></tr></thead><tbody
+                                        id="tb-inv"></tbody></table></div></div>
+                    </section>
+
+                    <!-- ENTRADAS -->
+                    <section class="sec" id="s-entradas">
+                        <div class="tc"><div class="th"><h3>Notas de
+                                    Entrada</h3><div class="ta"><button
+                                        class="btn btn-p"
+                                        onclick="mNota('entrada')"><i
+                                            class="fa-solid fa-plus"></i> Nueva
+                                        Entrada</button></div></div><div
+                                class="tw"><table><thead><tr><th>No.
+                                                Nota</th><th>Fecha</th><th>Proveedor</th><th>Articulos</th><th>Total</th><th>Estado</th><th>Acc.</th></tr></thead><tbody
+                                        id="tb-ent"></tbody></table></div></div>
+                    </section>
+
+                    <!-- SALIDAS -->
+                    <section class="sec" id="s-salidas">
+                        <div class="tc"><div class="th"><h3>Notas de Salida /
+                                    Pedimentos</h3><div class="ta"><button
+                                        class="btn btn-p"
+                                        onclick="mNota('salida')"><i
+                                            class="fa-solid fa-plus"></i> Nueva
+                                        Salida</button></div></div><div
+                                class="tw"><table><thead><tr><th>No.
+                                                Nota</th><th>Fecha</th><th>Empresa</th><th>Solicitante</th><th>Ubicacion</th><th>Art.</th><th>Estado</th><th>Acc.</th></tr></thead><tbody
+                                        id="tb-sal"></tbody></table></div></div>
+                    </section>
+
+                    <!-- UBICACIONES -->
+                    <section class="sec" id="s-ubicaciones">
+                        <div class="tc"><div class="th"><h3>Ubicaciones
+                                    (Plantas, Sucursales, Estaciones)</h3><div
+                                    class="ta">
+                                    <select class="fs" id="f-ub-emp"
+                                        onchange="rUbi()"><option value>Todas
+                                            las empresas</option><option
+                                            value="tecomatlan">Gas
+                                            Tecomatlan</option><option
+                                            value="paraiso">Gas El
+                                            Paraiso</option></select>
+                                    <select class="fs" id="f-ub-tipo"
+                                        onchange="rUbi()"><option value>Todos
+                                            los tipos</option><option
+                                            value="planta">Planta</option><option
+                                            value="sucursal">Sucursal</option><option
+                                            value="estacion">Estacion</option></select>
+                                    <button class="btn btn-p"
+                                        onclick="mUbi()"><i
+                                            class="fa-solid fa-plus"></i> Nueva
+                                        Ubicacion</button>
+                                </div></div><div
+                                class="tw"><table><thead><tr><th>Nombre</th><th>Empresa</th><th>Tipo</th><th>Razon
+                                                Social</th><th>Domicilio</th><th>Permiso</th><th>Encargado</th><th>Acc.</th></tr></thead><tbody
+                                        id="tb-ubi"></tbody></table></div></div>
+                    </section>
+
+                    <!-- EQUIPOS -->
+                    <section class="sec" id="s-equipos">
+                        <div class="tc"><div class="th"><h3>Gestión de Equipos
+                                    (Pipas, Trailers, Estaciones)</h3><div
+                                    class="ta">
+                                    <select class="fs" id="f-equipo-emp"
+                                        onchange="rEquipos()"><option
+                                            value>Todas las
+                                            empresas</option><option
+                                            value="tecomatlan">Gas
+                                            Tecomatlan</option><option
+                                            value="paraiso">Gas El
+                                            Paraiso</option></select>
+                                    <select class="fs" id="f-equipo-tipo"
+                                        onchange="rEquipos()"><option
+                                            value>Todos los
+                                            tipos</option><option
+                                            value="pipa">Pipa</option><option
+                                            value="trailer">Trailer</option><option
+                                            value="estacion">Estacion</option><option
+                                            value="otro">Otro</option></select>
+                                    <button class="btn btn-p"
+                                        onclick="mEquipo()"><i
+                                            class="fa-solid fa-plus"></i> Nuevo
+                                        Equipo</button>
+                                </div></div><div
+                                class="tw"><table><thead><tr><th>Nombre</th><th>Empresa</th><th>Tipo</th><th>Ubicación</th><th>Estado</th><th>Acc.</th></tr></thead><tbody
+                                        id="tb-equipos"></tbody></table></div></div>
+                    </section>
+
+                    <!-- USUARIOS -->
+                    <section class="sec" id="s-usuarios">
+                        <div class="tc"><div class="th"><h3>Usuarios del
+                                    Sistema</h3><div class="ta">
+                                    <select class="fs" id="f-us-emp"
+                                        onchange="rUsu()"><option value>Todas
+                                            las empresas</option><option
+                                            value="tecomatlan">Gas
+                                            Tecomatlan</option><option
+                                            value="paraiso">Gas El
+                                            Paraiso</option></select>
+                                    <button class="btn btn-p"
+                                        onclick="mUsu()"><i
+                                            class="fa-solid fa-user-plus"></i>
+                                        Nuevo Usuario</button>
+                                </div></div><div
+                                class="tw"><table><thead><tr><th>Nombre</th><th>Usuario</th><th>Empresa</th><th>Ubicacion</th><th>Rol</th><th>Acc.</th></tr></thead><tbody
+                                        id="tb-usu"></tbody></table></div></div>
+                    </section>
+
+                    <!-- REPORTES -->
+                    <section class="sec" id="s-reportes">
+                        <div class="tc report-card">
+                            <div class="th">
+                                <h3><i class="fa-solid fa-chart-column"
+                                        style="margin-right:6px;color:var(--p)"></i>Reportes</h3>
+                            </div>
+
+                            <div class="report-filters">
+                                <div class="fg">
+                                    <label>Fecha inicio</label>
+                                    <input class="fs" type="date"
+                                        id="rep-fecha-inicio">
+                                </div>
+                                <div class="fg">
+                                    <label>Fecha fin</label>
+                                    <input class="fs" type="date"
+                                        id="rep-fecha-fin">
+                                </div>
+                                <div class="fg">
+                                    <label>Empresa</label>
+                                    <select class="fs" id="rep-empresa">
+                                        <option value>Todas</option>
+                                        <option value="tecomatlan">Gas
+                                            Tecomatlan</option>
+                                        <option value="paraiso">Gas El
+                                            Paraiso</option>
+                                    </select>
+                                </div>
+                                <div class="fg">
+                                    <label>Reporte a visualizar</label>
+                                    <select class="fs" id="rep-tipo">
+                                        <option
+                                            value="movimientos">Movimientos</option>
+                                        <option value="detalle">Detalle
+                                            movimientos</option>
+                                        <option value="inventario">Inventario
+                                            actual</option>
+                                        <option value="salidas-empresa">Salidas
+                                            por empresa</option>
+                                        <option value="salidas-equipo">Salidas
+                                            por equipo</option>
+                                    </select>
+                                </div>
+                                <div class="fg report-search">
+                                    <label>Buscar</label>
+                                    <input class="fs" type="text"
+                                        id="rep-busqueda"
+                                        placeholder="Nota, refaccion, codigo, equipo...">
+                                </div>
+                            </div>
+
+                            <div class="report-actions">
+                                <button class="btn btn-p"
+                                    onclick="buscarReportes()"><i
+                                        class="fa-solid fa-magnifying-glass"></i>
+                                    Buscar</button>
+                                <button class="btn btn-s"
+                                    onclick="limpiarReportes()"><i
+                                        class="fa-solid fa-broom"></i>
+                                    Limpiar</button>
+                            </div>
+
+                            <div class="report-downloads">
+                                <div class="report-row">
+                                    <span><i class="fa-solid fa-file-lines"></i>
+                                        Movimientos</span>
+                                    <button class="btn btn-s"
+                                        onclick="descargarReporte('movimientos','excel')"><i
+                                            class="fa-solid fa-file-excel"></i>
+                                        Excel</button>
+                                    <button class="btn btn-s"
+                                        onclick="descargarReporte('movimientos','pdf')"><i
+                                            class="fa-solid fa-file-pdf"></i>
+                                        PDF</button>
+                                </div>
+                                <div class="report-row">
+                                    <span><i class="fa-solid fa-list-check"></i>
+                                        Detalle movimientos</span>
+                                    <button class="btn btn-s"
+                                        onclick="descargarReporte('detalle','excel')"><i
+                                            class="fa-solid fa-file-excel"></i>
+                                        Excel</button>
+                                    <button class="btn btn-s"
+                                        onclick="descargarReporte('detalle','pdf')"><i
+                                            class="fa-solid fa-file-pdf"></i>
+                                        PDF</button>
+                                </div>
+                                <div class="report-row">
+                                    <span><i
+                                            class="fa-solid fa-boxes-stacked"></i>
+                                        Inventario actual</span>
+                                    <button class="btn btn-s"
+                                        onclick="descargarReporte('inventario','excel')"><i
+                                            class="fa-solid fa-file-excel"></i>
+                                        Excel</button>
+                                    <button class="btn btn-s"
+                                        onclick="descargarReporte('inventario','pdf')"><i
+                                            class="fa-solid fa-file-pdf"></i>
+                                        PDF</button>
+                                </div>
+                                <div class="report-row">
+                                    <span><i class="fa-solid fa-building"></i>
+                                        Salidas por empresa</span>
+                                    <button class="btn btn-s"
+                                        onclick="descargarReporte('salidas-empresa','excel')"><i
+                                            class="fa-solid fa-file-excel"></i>
+                                        Excel</button>
+                                    <button class="btn btn-s"
+                                        onclick="descargarReporte('salidas-empresa','pdf')"><i
+                                            class="fa-solid fa-file-pdf"></i>
+                                        PDF</button>
+                                </div>
+                                <div class="report-row">
+                                    <span><i class="fa-solid fa-truck"></i>
+                                        Salidas por equipo</span>
+                                    <button class="btn btn-s"
+                                        onclick="descargarReporte('salidas-equipo','excel')"><i
+                                            class="fa-solid fa-file-excel"></i>
+                                        Excel</button>
+                                    <button class="btn btn-s"
+                                        onclick="descargarReporte('salidas-equipo','pdf')"><i
+                                            class="fa-solid fa-file-pdf"></i>
+                                        PDF</button>
+                                </div>
+                            </div>
+
+                            <div class="report-result-title"
+                                id="rep-resumen">Usa los filtros y presiona
+                                Buscar para ver el reporte en pantalla.</div>
+                            <div class="tw"><table><thead
+                                        id="tb-rep-head"></thead><tbody
+                                        id="tb-rep"></tbody></table></div>
+                        </div>
+                    </section>
+
+                    <!-- ALERTAS -->
+                    <section class="sec" id="s-alertas">
+                        <div class="tc"><div class="th"><h3>Centro de
+                                    Alertas</h3><div class="ta"><button
+                                        class="btn btn-s"
+                                        onclick="marcarTodas()"><i
+                                            class="fa-solid fa-check-double"></i>
+                                        Marcar todas
+                                        leidas</button></div></div><div
+                                id="lst-al"></div></div>
+                    </section>
+
+                </div></main></div>
+
+        <!-- MODAL -->
+        <div class="mo" id="mo">
+            <div class="md" id="md">
+                <div class="md-h"><h3 id="mt">Modal</h3><button class="md-x"
+                        onclick="cM()"><i
+                            class="fa-solid fa-xmark"></i></button></div>
+                <div class="md-b" id="mb"></div>
+                <div class="md-f" id="mf"></div>
+            </div>
+        </div>
+
+        <!-- TOASTS -->
+        <div class="toc" id="toc"></div>
+
+        <script src="js/app.js"></script>
+    </body>
+</html>
