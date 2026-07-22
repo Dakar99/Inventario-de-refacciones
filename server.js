@@ -19,15 +19,11 @@ const movimientosRoutes = require('./src/routes/movimientos.routes');
 const reportesRoutes = require('./src/routes/reportes.routes');
 
 const app = express();
-<<<<<<< HEAD
-const port = process.env.PORT || 3000;
-=======
 const PORT = process.env.PORT || 7549;
 
 //app.listen(PORT, "0.0.0.0", () => {
 //    console.log(`Servidor iniciado en http://localhost:${PORT}`);
 //});
->>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
 
 app.use(helmet({
     contentSecurityPolicy: false
@@ -35,11 +31,7 @@ app.use(helmet({
 
 app.use(rateLimit({
     windowMs: 15 * 60 * 1000,
-<<<<<<< HEAD
-    max: 1000,
-=======
     max: 10000,
->>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     message: {
         error: 'Demasiadas solicitudes, intenta más tarde'
     }
@@ -47,13 +39,9 @@ app.use(rateLimit({
 
 app.use(cors({
     origin: [
-<<<<<<< HEAD
-        'http://localhost:3000'
-=======
         //'http://localhost:3000',
         'http://localhost:7549',
         'http://100.94.107.84:7549'
->>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     ],
     credentials: true
 }));
@@ -70,19 +58,6 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
-<<<<<<< HEAD
-app.use(authRoutes);
-app.use(healthRoutes);
-app.use(refaccionesRoutes);
-app.use(usuariosRoutes);
-app.use(alertasRoutes);
-app.use(equiposRoutes);
-app.use(ubicacionesRoutes);
-app.use(movimientosRoutes);
-app.use(reportesRoutes);
-
-// Permite abrir el frontend desde http://localhost:PORT/
-=======
 app.use('/api', authRoutes);
 app.use('/api', healthRoutes);
 app.use('/api', refaccionesRoutes);
@@ -94,7 +69,6 @@ app.use('/api', movimientosRoutes);
 app.use('/api', reportesRoutes);
 
 // Permite abrir el frontend desde http://100.94.107.84:7549/
->>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -105,13 +79,8 @@ app.use(errorHandler);
 async function iniciarServidor() {
     try {
         await verificarConexion();
-<<<<<<< HEAD
-        app.listen(port, () => {
-            console.log(`Servidor corriendo en http://localhost:${port}`);
-=======
         app.listen(PORT, '0.0.0.0', () => {
             console.log(`Servidor corriendo en http://localhost:${PORT}`);
->>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
         });
     } catch (error) {
         console.error('Error conectando a PostgreSQL:', error);
