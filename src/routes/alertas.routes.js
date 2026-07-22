@@ -5,7 +5,11 @@ const { verificarToken } = require('../middlewares/auth');
 
 
 // ENDPOINTS DE ALERTAS
+<<<<<<< HEAD
 router.get('/api/alertas', verificarToken, async (req, res) => {
+=======
+router.get('/alertas', verificarToken, async (req, res) => {
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     try {
         const params = [];
         let query = 'SELECT * FROM alertas WHERE 1=1';
@@ -22,7 +26,11 @@ router.get('/api/alertas', verificarToken, async (req, res) => {
     }
 });
 
+<<<<<<< HEAD
 router.post('/api/alertas/verificar-stock', verificarToken, async (req, res) => {
+=======
+router.post('/alertas/verificar-stock', verificarToken, async (req, res) => {
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     try {
         if (req.usuario.rol !== 'bodega') {
     return res.status(403).json({
@@ -52,7 +60,11 @@ router.post('/api/alertas/verificar-stock', verificarToken, async (req, res) => 
     }
 });
 
+<<<<<<< HEAD
 router.put('/api/alertas/:id/leida', verificarToken, async (req, res) => {
+=======
+router.put('/alertas/:id/leida', verificarToken, async (req, res) => {
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     try {
         const result = await pool.query('UPDATE alertas SET leida = true WHERE id = $1 RETURNING *', [req.params.id]);
         if (result.rows.length === 0) return res.status(404).json({ error: 'Alerta no encontrada' });
@@ -63,7 +75,11 @@ router.put('/api/alertas/:id/leida', verificarToken, async (req, res) => {
     }
 });
 
+<<<<<<< HEAD
 router.put('/api/alertas/marcar-todas/leidas', verificarToken, async (req, res) => {
+=======
+router.put('/alertas/marcar-todas/leidas', verificarToken, async (req, res) => {
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     try {
         const params = [];
         let query = 'UPDATE alertas SET leida = true WHERE leida = false';
@@ -81,6 +97,10 @@ router.put('/api/alertas/marcar-todas/leidas', verificarToken, async (req, res) 
 
 // ENDPOINTS DE EQUIPOS
 
+<<<<<<< HEAD
 // GET /api/equipos - Listar equipos (con filtros)
+=======
+// GET /equipos - Listar equipos (con filtros)
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
 
 module.exports = router;

@@ -1105,6 +1105,18 @@ tbody tr:hover {
     cursor: pointer
 }
 
+<<<<<<< HEAD
+=======
+#lst-al {
+    display: block;
+}
+
+.ai {
+    background: white;
+    color: var(--t);
+}
+
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
 .ai:hover {
     background: var(--f)
 }
@@ -1124,6 +1136,7 @@ tbody tr:hover {
     font-size: 14px
 }
 
+<<<<<<< HEAD
 .aic.sol {
     background: #E3F2FD;
     color: #1565C0
@@ -1137,6 +1150,21 @@ tbody tr:hover {
 .aic.ent {
     background: #E8F5E9;
     color: #2E7D32
+=======
+.aic.solicitud {
+    background: #E3F2FD;
+    color: #1565C0;
+}
+
+.aic.stock {
+    background: #FFEBEE;
+    color: #C62828;
+}
+
+.aic.entrada {
+    background: #E8F5E9;
+    color: #2E7D32;
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
 }
 
 .aix {

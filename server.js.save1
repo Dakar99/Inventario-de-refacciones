@@ -1,0 +1,1398 @@
+const express = require('express');
+const { Pool } = require('pg');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const cors = require('cors');
+require('dotenv').config();
+
+const app = express();
+const port = process.env.PORT || 7549;
+
+// Middleware para verificar JWT
+function verificarToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    if (!authHeader) return res.status(401).json({ error: 'Token no proporcionado' });
+
+    const token = authHeader.split(' ')[1]; // "Bearer <token>"
+    if (!token) return res.status(401).json({ error: 'Formato de token inválido' });
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.usuario = decoded; // guardamos la info del usuario en la request
+        next();
+    } catch (error) {
+        return res.status(403).json({ error: 'Token inválido o expirado' });
+    }
+}
+// Middleware
+app.use(cors());
+app.use(express.json());  // Debe estar antes de las rutas
+
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Configurar almacenamiento de archivos
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const uploadDir = 'public/uploads/';
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = /jpeg|jpg|png|gif|webp/;
+        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+        const mimetype = allowedTypes.test(file.mimetype);
+        if (mimetype && extname) {
+            return cb(null, true);
+        } else {
+            cb(new Error('Solo se permiten imágenes (jpeg, jpg, png, gif, webp)'));
+        }
+    }
+});
+
+// ENDPOINTS DE REFACCIONES
+
+// GET /api/refacciones - Listar refacciones (con filtros)
+app.get('/api/refacciones', verificarToken, async (req, res) => {
+    try {
+        const { categoria, empresa, busqueda } = req.query;
+        let query = 'SELECT * FROM refacciones WHERE 1=1';
+        const params = [];
+        let idx = 1;
+
+        if (categoria) {
+            query += ` AND categoria = $${idx}`;
+            params.push(categoria);
+            idx++;
+        }
+        if (empresa) {
+            query += ` AND empresa = $${idx}`;
+            params.push(empresa);
+            idx++;
+        }
+        if (busqueda) {
+            query += ` AND (nombre ILIKE $${idx} OR codigo ILIKE $${idx} OR para_que_es ILIKE $${idx} OR descripcion ILIKE $${idx})`;
+            params.push(`%${busqueda}%`);
+            idx++;
+        }
+
+        const result = await pool.query(query, params);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error en GET /refacciones:', error);
+        res.status(500).json({ error: 'Error al obtener refacciones' });
+    }
+});
+// GET /api/refacciones/:id - Obtener una refacción por ID
+app.get('/api/refacciones/:id', verificarToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await pool.query('SELECT * FROM refacciones WHERE id = $1', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Refacción no encontrada' });
+        }
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Error en GET /refacciones/:id:', error);
+        res.status(500).json({ error: 'Error al obtener la refacción' });
+    }
+});
+// POST /api/refacciones - Crear nueva refacción (solo bodega)
+app.post('/api/refacciones', verificarToken, async (req, res) => {
+    try {
+        // Verificar rol
+        if (req.usuario.rol !== 'bodega') {
+            return res.status(403).json({ error: 'No autorizado' });
+        }
+
+        const { codigo, nombre, descripcion, categoria, para_que_es, cantidad, stock_minimo, precio, empresa } = req.body;
+        if (!codigo || !nombre || !categoria || !empresa) {
+            return res.status(400).json({ error: 'Faltan campos obligatorios: codigo, nombre, categoria, empresa' });
+        }
+
+        // Verificar que el código no exista
+        const exist = await pool.query('SELECT id FROM refacciones WHERE codigo = $1', [codigo]);
+        if (exist.rows.length > 0) {
+            return res.status(400).json({ error: 'El código ya existe' });
+        }
+
+        const result = await pool.query(
+            `INSERT INTO refacciones 
+            (codigo, nombre, descripcion, categoria, para_que_es, cantidad, stock_minimo, precio, empresa, fecha_registro)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_DATE)
+            RETURNING *`,
+            [codigo, nombre, descripcion, categoria, para_que_es, cantidad || 0, stock_minimo || 2, precio || 0, empresa]
+        );
+
+        res.status(201).json(result.rows[0]);
+    } catch (error) {
+        console.error('Error en POST /refacciones:', error);
+        res.status(500).json({ error: 'Error al crear refacción' });
+    }
+});
+// PUT /api/refacciones/:id - Actualizar refacción (solo bodega)
+app.put('/api/refacciones/:id', verificarToken, async (req, res) => {
+    try {
+        if (req.usuario.rol !== 'bodega') {
+            return res.status(403).json({ error: 'No autorizado' });
+        }
+
+        const { id } = req.params;
+        const { nombre, descripcion, categoria, para_que_es, cantidad, stock_minimo, precio, empresa } = req.body;
+
+        // Construir dinámicamente la actualización (solo los campos que vienen)
+        let query = 'UPDATE refacciones SET ';
+        const fields = [];
+        const values = [];
+        let idx = 1;
+
+        if (nombre !== undefined) { fields.push(`nombre = $${idx}`); values.push(nombre); idx++; }
+        if (descripcion !== undefined) { fields.push(`descripcion = $${idx}`); values.push(descripcion); idx++; }
+        if (categoria !== undefined) { fields.push(`categoria = $${idx}`); values.push(categoria); idx++; }
+        if (para_que_es !== undefined) { fields.push(`para_que_es = $${idx}`); values.push(para_que_es); idx++; }
+        if (cantidad !== undefined) { fields.push(`cantidad = $${idx}`); values.push(cantidad); idx++; }
+        if (stock_minimo !== undefined) { fields.push(`stock_minimo = $${idx}`); values.push(stock_minimo); idx++; }
+        if (precio !== undefined) { fields.push(`precio = $${idx}`); values.push(precio); idx++; }
+        if (empresa !== undefined) { fields.push(`empresa = $${idx}`); values.push(empresa); idx++; }
+
+        if (fields.length === 0) {
+            return res.status(400).json({ error: 'No hay campos para actualizar' });
+        }
+
+        query += fields.join(', ');
+        query += ` WHERE id = $${idx} RETURNING *`;
+        values.push(id);
+
+        const result = await pool.query(query, values);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Refacción no encontrada' });
+        }
+
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Error en PUT /refacciones:', error);
+        res.status(500).json({ error: 'Error al actualizar refacción' });
+    }
+});
+// DELETE /api/refacciones/:id - Eliminar refacción (solo bodega)
+app.delete('/api/refacciones/:id', verificarToken, async (req, res) => {
+    try {
+        if (req.usuario.rol !== 'bodega') {
+            return res.status(403).json({ error: 'No autorizado' });
+        }
+
+        const { id } = req.params;
+        const result = await pool.query('DELETE FROM refacciones WHERE id = $1 RETURNING id', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Refacción no encontrada' });
+        }
+
+        res.json({ message: 'Refacción eliminada' });
+    } catch (error) {
+        console.error('Error en DELETE /refacciones:', error);
+        res.status(500).json({ error: 'Error al eliminar refacción' });
+    }
+});
+// GET /api/usuarios - Listar usuarios (solo para bodega y encargados)
+app.get('/api/usuarios', verificarToken, async (req, res) => {
+    try {
+        // Si el usuario no es bodega, solo puede ver usuarios de su empresa
+        let query = 'SELECT id, nombre, usuario, empresa, ubicacion_id, rol, activo FROM usuarios';
+        const params = [];
+        if (req.usuario.rol !== 'bodega') {
+            query += ' WHERE empresa = $1';
+            params.push(req.usuario.empresa);
+        }
+        query += ' ORDER BY nombre';
+        const result = await pool.query(query, params);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error en GET /usuarios:', error);
+        res.status(500).json({ error: 'Error al obtener usuarios' });
+    }
+});
+// ENDPOINTS DE EQUIPOS
+
+// GET /api/equipos - Listar equipos (con filtros)
+app.get('/api/equipos', verificarToken, async (req, res) => {
+    try {
+        const { ubicacion_id, empresa } = req.query;
+        let query = 'SELECT * FROM equipos WHERE 1=1';
+        const params = [];
+        let idx = 1;
+
+        if (ubicacion_id) {
+            query += ` AND ubicacion_id = $${idx}`;
+            params.push(ubicacion_id);
+            idx++;
+        }
+        if (empresa) {
+            query += ` AND empresa = $${idx}`;
+            params.push(empresa);
+            idx++;
+        }
+
+        // Si no es bodega, solo ver equipos de su empresa
+        if (req.usuario.rol !== 'bodega') {
+            query += ` AND empresa = $${idx}`;
+            params.push(req.usuario.empresa);
+            idx++;
+        }
+
+        query += ' ORDER BY nombre';
+        const result = await pool.query(query, params);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error en GET /equipos:', error);
+        res.status(500).json({ error: 'Error al obtener equipos' });
+    }
+});
+// GET /api/equipos/:id - Obtener un equipo por ID
+app.get('/api/equipos/:id', verificarToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await pool.query('SELECT * FROM equipos WHERE id = $1', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Equipo no encontrado' });
+        }
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Error en GET /equipos/:id:', error);
+        res.status(500).json({ error: 'Error al obtener el equipo' });
+    }
+});
+// POST /api/equipos - Crear equipo (solo bodega)
+app.post('/api/equipos', verificarToken, async (req, res) => {
+    try {
+        if (req.usuario.rol !== 'bodega') {
+            return res.status(403).json({ error: 'No autorizado' });
+        }
+        const { nombre, tipo, ubicacion_id, empresa } = req.body;
+        if (!nombre || !tipo || !empresa) {
+            return res.status(400).json({ error: 'Faltan campos obligatorios' });
+        }
+        const result = await pool.query(
+            'INSERT INTO equipos (nombre, tipo, ubicacion_id, empresa) VALUES ($1, $2, $3, $4) RETURNING *',
+            [nombre, tipo, ubicacion_id, empresa]
+        );
+        res.status(201).json(result.rows[0]);
+    } catch (error) {
+        console.error('Error en POST /equipos:', error);
+        res.status(500).json({ error: 'Error al crear equipo' });
+    }
+});
+
+// PUT /api/equipos/:id - Actualizar equipo (solo bodega)
+app.put('/api/equipos/:id', verificarToken, async (req, res) => {
+    try {
+        if (req.usuario.rol !== 'bodega') {
+            return res.status(403).json({ error: 'No autorizado' });
+        }
+        const { id } = req.params;
+        const { nombre, tipo, ubicacion_id, empresa, activo } = req.body;
+        const result = await pool.query(
+            `UPDATE equipos SET 
+                nombre = COALESCE($1, nombre),
+                tipo = COALESCE($2, tipo),
+                ubicacion_id = COALESCE($3, ubicacion_id),
+                empresa = COALESCE($4, empresa),
+                activo = COALESCE($5, activo)
+            WHERE id = $6 RETURNING *`,
+            [nombre, tipo, ubicacion_id, empresa, activo, id]
+        );
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Equipo no encontrado' });
+        }
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Error en PUT /equipos:', error);
+        res.status(500).json({ error: 'Error al actualizar equipo' });
+    }
+});
+
+// DELETE /api/equipos/:id - Eliminar equipo (solo bodega)
+app.delete('/api/equipos/:id', verificarToken, async (req, res) => {
+    try {
+        if (req.usuario.rol !== 'bodega') {
+            return res.status(403).json({ error: 'No autorizado' });
+        }
+        const { id } = req.params;
+        const result = await pool.query('DELETE FROM equipos WHERE id = $1 RETURNING id', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Equipo no encontrado' });
+        }
+        res.json({ message: 'Equipo eliminado' });
+    } catch (error) {
+        console.error('Error en DELETE /equipos:', error);
+        res.status(500).json({ error: 'Error al eliminar equipo' });
+    }
+});
+// ENDPOINTS DE UBICACIONES
+
+// GET /api/ubicaciones - Listar ubicaciones con filtros opcionales
+app.get('/api/ubicaciones', verificarToken, async (req, res) => {
+    try {
+        const { empresa, tipo } = req.query;
+        let query = 'SELECT * FROM ubicaciones WHERE 1=1';
+        const params = [];
+        let idx = 1;
+
+        if (empresa) {
+            query += ` AND empresa = $${idx}`;
+            params.push(empresa);
+            idx++;
+        }
+        if (tipo) {
+            query += ` AND tipo = $${idx}`;
+            params.push(tipo);
+            idx++;
+        }
+
+        const result = await pool.query(query, params);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error en GET /ubicaciones:', error);
+        res.status(500).json({ error: 'Error al obtener ubicaciones' });
+    }
+});
+
+// GET /api/ubicaciones/:id - Obtener una ubicación por ID
+app.get('/api/ubicaciones/:id', verificarToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await pool.query('SELECT * FROM ubicaciones WHERE id = $1', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Ubicación no encontrada' });
+        }
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Error en GET /ubicaciones/:id:', error);
+        res.status(500).json({ error: 'Error al obtener ubicación' });
+    }
+});
+
+// POST /api/ubicaciones - Crear nueva ubicación (solo bodega)
+app.post('/api/ubicaciones', verificarToken, async (req, res) => {
+    try {
+        if (req.usuario.rol !== 'bodega') {
+            return res.status(403).json({ error: 'No autorizado' });
+        }
+
+        const { nombre, empresa, tipo, razon_social, domicilio, permiso, telefono, encargado, notas } = req.body;
+        if (!nombre || !empresa || !tipo) {
+            return res.status(400).json({ error: 'Faltan campos obligatorios: nombre, empresa, tipo' });
+        }
+
+        const result = await pool.query(
+            `INSERT INTO ubicaciones 
+            (nombre, empresa, tipo, razon_social, domicilio, permiso, telefono, encargado, notas)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            RETURNING *`,
+            [nombre, empresa, tipo, razon_social || '', domicilio || '', permiso || '', telefono || '', encargado || '', notas || '']
+        );
+
+        res.status(201).json(result.rows[0]);
+    } catch (error) {
+        console.error('Error en POST /ubicaciones:', error);
+        res.status(500).json({ error: 'Error al crear ubicación' });
+    }
+});
+
+// PUT /api/ubicaciones/:id - Actualizar ubicación (solo bodega)
+app.put('/api/ubicaciones/:id', verificarToken, async (req, res) => {
+    try {
+        if (req.usuario.rol !== 'bodega') {
+            return res.status(403).json({ error: 'No autorizado' });
+        }
+
+        const { id } = req.params;
+        const { nombre, empresa, tipo, razon_social, domicilio, permiso, telefono, encargado, notas } = req.body;
+
+        const result = await pool.query(
+            `UPDATE ubicaciones SET 
+                nombre = COALESCE($1, nombre),
+                empresa = COALESCE($2, empresa),
+                tipo = COALESCE($3, tipo),
+                razon_social = COALESCE($4, razon_social),
+                domicilio = COALESCE($5, domicilio),
+                permiso = COALESCE($6, permiso),
+                telefono = COALESCE($7, telefono),
+                encargado = COALESCE($8, encargado),
+                notas = COALESCE($9, notas)
+            WHERE id = $10
+            RETURNING *`,
+            [nombre, empresa, tipo, razon_social, domicilio, permiso, telefono, encargado, notas, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Ubicación no encontrada' });
+        }
+
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Error en PUT /ubicaciones:', error);
+        res.status(500).json({ error: 'Error al actualizar ubicación' });
+    }
+});
+
+// DELETE /api/ubicaciones/:id - Eliminar ubicación (solo bodega)
+app.delete('/api/ubicaciones/:id', verificarToken, async (req, res) => {
+    try {
+        if (req.usuario.rol !== 'bodega') {
+            return res.status(403).json({ error: 'No autorizado' });
+        }
+
+        const { id } = req.params;
+        // Verificar que no haya usuarios asociados (opcional, pero recomendado)
+        // const check = await pool.query('SELECT id FROM usuarios WHERE ubicacion_id = $1', [id]);
+        // if (check.rows.length > 0) {
+        //     return res.status(400).json({ error: 'No se puede eliminar porque hay usuarios asociados' });
+        // }
+
+        const result = await pool.query('DELETE FROM ubicaciones WHERE id = $1 RETURNING id', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Ubicación no encontrada' });
+        }
+
+        res.json({ message: 'Ubicación eliminada' });
+    } catch (error) {
+        console.error('Error en DELETE /ubicaciones:', error);
+        res.status(500).json({ error: 'Error al eliminar ubicación' });
+    }
+});
+// ENDPOINTS DE MOVIMIENTOS
+
+// GET /api/movimientos - Listar movimientos (con filtros y totales)
+app.get('/api/movimientos', verificarToken, async (req, res) => {
+    try {
+        const { tipo, empresa, estado } = req.query;
+        let query = `
+            SELECT m.*, 
+                   u.nombre as solicitante_nombre,
+                   u.empresa as solicitante_empresa,
+                   ubi.nombre as ubicacion_nombre,
+                   eq.nombre as equipo_nombre,
+                   COALESCE(
+                       (SELECT SUM(mi.cantidad) FROM movimiento_items mi WHERE mi.movimiento_id = m.id), 
+                       0
+                   ) as total_items,
+                   COALESCE(
+                       (SELECT SUM(mi.cantidad * mi.precio_unitario) FROM movimiento_items mi WHERE mi.movimiento_id = m.id), 
+                       0
+                   ) as total_monto
+            FROM movimientos m
+            LEFT JOIN usuarios u ON m.solicitante_id = u.id
+            LEFT JOIN ubicaciones ubi ON m.ubicacion_destino_id = ubi.id
+            LEFT JOIN equipos eq ON m.equipo_id = eq.id
+            WHERE 1=1
+        `;
+        const params = [];
+        let idx = 1;
+
+        if (tipo) {
+            query += ` AND m.tipo = $${idx}`;
+            params.push(tipo);
+            idx++;
+        }
+        if (empresa) {
+            query += ` AND m.empresa = $${idx}`;
+            params.push(empresa);
+            idx++;
+        }
+        if (estado) {
+            query += ` AND m.estado = $${idx}`;
+            params.push(estado);
+            idx++;
+        }
+
+        // Si el usuario no es bodega, solo ver movimientos de su empresa
+        if (req.usuario.rol !== 'bodega') {
+            query += ` AND m.empresa = $${idx}`;
+            params.push(req.usuario.empresa);
+            idx++;
+        }
+
+        query += ` ORDER BY m.fecha DESC, m.id DESC`;
+
+        const result = await pool.query(query, params);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error en GET /movimientos:', error);
+        res.status(500).json({ error: 'Error al obtener movimientos', detalle: error.message });
+    }
+});
+// GET /api/movimientos/:id - Obtener detalle con items
+app.get('/api/movimientos/:id', verificarToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        // Obtener el movimiento
+        const movResult = await pool.query(`
+            SELECT m.*, 
+                   u.nombre as solicitante_nombre,
+                   u.empresa as solicitante_empresa,
+                   ubi.nombre as ubicacion_nombre
+            FROM movimientos m
+            LEFT JOIN usuarios u ON m.solicitante_id = u.id
+            LEFT JOIN ubicaciones ubi ON m.ubicacion_destino_id = ubi.id
+            WHERE m.id = $1
+        `, [id]);
+
+        if (req.usuario.rol !== 'bodega' && req.usuario.rol !== 'encargado') {
+            return res.status(403).json({ error: 'No autorizado' });
+        }
+        if (movResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Movimiento no encontrado' });
+        }
+
+        const movimiento = movResult.rows[0];
+
+        // Obtener los items
+        const itemsResult = await pool.query(`
+            SELECT mi.*, r.codigo, r.nombre as refaccion_nombre, r.categoria
+            FROM movimiento_items mi
+            JOIN refacciones r ON mi.refaccion_id = r.id
+            WHERE mi.movimiento_id = $1
+        `, [id]);
+
+        movimiento.items = itemsResult.rows;
+        res.json(movimiento);
+    } catch (error) {
+        console.error('Error en GET /movimientos/:id:', error);
+        res.status(500).json({ error: 'Error al obtener detalle' });
+    }
+});
+// POST /api/movimientos - Crear movimiento con fotos
+app.post('/api/movimientos', verificarToken, upload.array('fotos', 20), async (req, res) => {
+    const client = await pool.connect();
+    try {
+        // Los datos del formulario vienen en req.body (texto) y req.files (archivos)
+        const { tipo, empresa, origen, observaciones } = req.body;
+	let { ubicacion_destino_id, solicitante_id, equipo_id } = req.body;
+
+	// Convertir cadenas vacías a null
+	ubicacion_destino_id = ubicacion_destino_id || null;
+	solicitante_id = solicitante_id || null;
+	equipo_id = equipo_id || null;
+	// items viene como string JSON (porque enviamos un array de objetos)
+        let items = [];
+        try {
+            items = JSON.parse(req.body.items);
+        } catch (e) {
+            return res.status(400).json({ error: 'Formato de items inválido' });
+        }
+
+        if (!tipo || !['entrada', 'salida'].includes(tipo)) {
+            return res.status(400).json({ error: 'Tipo inválido' });
+        }
+        if (!items || !Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ error: 'Debe incluir al menos un ítem' });
+        }
+
+        // Validar stock para salidas
+        if (tipo === 'salida') {
+            for (const it of items) {
+                const stockRes = await client.query('SELECT cantidad FROM refacciones WHERE id = $1', [it.refaccion_id]);
+                if (stockRes.rows.length === 0) {
+                    return res.status(404).json({ error: `Refacción con id ${it.refaccion_id} no existe` });
+                }
+                if (stockRes.rows[0].cantidad < it.cantidad) {
+                    const ref = await client.query('SELECT nombre FROM refacciones WHERE id = $1', [it.refaccion_id]);
+                    return res.status(400).json({ error: `Stock insuficiente para "${ref.rows[0].nombre}"` });
+                }
+            }
+        }
+
+        // Generar número de nota
+        const year = new Date().getFullYear();
+        const prefix = tipo === 'entrada' ? 'ENT' : 'SAL';
+        const countRes = await client.query(
+            `SELECT COUNT(*) FROM movimientos WHERE tipo = $1 AND EXTRACT(YEAR FROM fecha) = $2`,
+            [tipo, year]
+        );
+        const count = parseInt(countRes.rows[0].count) + 1;
+        const numero_nota = `${prefix}-${year}-${String(count).padStart(3, '0')}`;
+        const estado = tipo === 'entrada' ? 'completada' : 'pendiente';
+
+        await client.query('BEGIN');
+
+        // Insertar movimiento
+        const movResult = await client.query(`
+            INSERT INTO movimientos 
+            (tipo, numero_nota, fecha, empresa, origen, ubicacion_destino_id, solicitante_id, observaciones, estado, equipo_id)
+            VALUES ($1, $2, CURRENT_DATE, $3, $4, $5, $6, $7, $8, $9)
+            RETURNING *
+        `, [tipo, numero_nota, empresa, origen, ubicacion_destino_id, solicitante_id, observaciones, estado, equipo_id || null]);
+
+        const movimiento = movResult.rows[0];
+
+        // Procesar cada ítem con su foto (si existe)
+        for (let i = 0; i < items.length; i++) {
+            const it = items[i];
+            let precio = it.precio_unitario || 0;
+            if (!precio) {
+                const refRes = await client.query('SELECT precio FROM refacciones WHERE id = $1', [it.refaccion_id]);
+                precio = refRes.rows[0]?.precio || 0;
+            }
+
+            // Buscar la foto correspondiente en req.files
+            let foto_url = null;
+            if (req.files && req.files[i]) {
+                foto_url = '/uploads/' + req.files[i].filename;
+            }
+
+            // Insertar item
+            await client.query(`
+                INSERT INTO movimiento_items 
+                (movimiento_id, refaccion_id, cantidad, precio_unitario, foto_url, tipo_refaccion)
+                VALUES ($1, $2, $3, $4, $5, $6)
+            `, [
+                movimiento.id,
+                it.refaccion_id,
+                it.cantidad,
+                precio,
+                foto_url,
+                it.tipo_refaccion || 'nueva'
+            ]);
+
+            // Si es entrada, aumentar stock
+            if (tipo === 'entrada') {
+                await client.query(`
+                    UPDATE refacciones 
+                    SET cantidad = cantidad + $1 
+                    WHERE id = $2
+                `, [it.cantidad, it.refaccion_id]);
+            }
+        }
+
+        await client.query('COMMIT');
+
+        // Obtener el movimiento completo con items para devolver
+        const movFinal = await client.query(`
+            SELECT m.*, 
+                   u.nombre as solicitante_nombre,
+                   ubi.nombre as ubicacion_nombre,
+                   e.nombre as equipo_nombre
+            FROM movimientos m
+            LEFT JOIN usuarios u ON m.solicitante_id = u.id
+            LEFT JOIN ubicaciones ubi ON m.ubicacion_destino_id = ubi.id
+            LEFT JOIN equipos e ON m.equipo_id = e.id
+            WHERE m.id = $1
+        `, [movimiento.id]);
+
+        const itemsFinal = await client.query(`
+            SELECT mi.*, r.codigo, r.nombre as refaccion_nombre, r.categoria
+            FROM movimiento_items mi
+            JOIN refacciones r ON mi.refaccion_id = r.id
+            WHERE mi.movimiento_id = $1
+        `, [movimiento.id]);
+
+        const respuesta = movFinal.rows[0];
+        respuesta.items = itemsFinal.rows;
+
+        res.status(201).json(respuesta);
+
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error en POST /movimientos:', error);
+        res.status(500).json({ error: error.message || 'Error al crear movimiento' });
+    } finally {
+        client.release();
+    }
+});
+// PUT /api/movimientos/:id/estado - Cambiar estado (solo bodega)
+app.put('/api/movimientos/:id/estado', verificarToken, async (req, res) => {
+    const client = await pool.connect();
+    try {
+        if (req.usuario.rol !== 'bodega') {
+            return res.status(403).json({ error: 'No autorizado' });
+        }
+
+        const { id } = req.params;
+        const { estado } = req.body;
+        if (!estado || !['completada', 'rechazada'].includes(estado)) {
+            return res.status(400).json({ error: 'Estado debe ser "completada" o "rechazada"' });
+        }
+
+        // Obtener el movimiento actual
+        const movRes = await client.query('SELECT * FROM movimientos WHERE id = $1', [id]);
+        if (movRes.rows.length === 0) {
+            return res.status(404).json({ error: 'Movimiento no encontrado' });
+        }
+        const movimiento = movRes.rows[0];
+
+        // Solo se puede cambiar si está pendiente
+        if (movimiento.estado !== 'pendiente') {
+            return res.status(400).json({ error: 'El movimiento ya no está pendiente' });
+        }
+
+        // Solo aplica a salidas (las entradas ya se aprueban automáticamente)
+        if (movimiento.tipo !== 'salida') {
+            return res.status(400).json({ error: 'Solo se pueden aprobar/rechazar salidas' });
+        }
+
+        await client.query('BEGIN');
+
+        if (estado === 'completada') {
+            // Descontar stock de cada item
+            const itemsRes = await client.query('SELECT * FROM movimiento_items WHERE movimiento_id = $1', [id]);
+            for (const item of itemsRes.rows) {
+                const stockRes = await client.query('SELECT cantidad FROM refacciones WHERE id = $1', [item.refaccion_id]);
+                if (stockRes.rows.length === 0) {
+                    throw new Error(`Refacción con id ${item.refaccion_id} no encontrada`);
+                }
+                if (stockRes.rows[0].cantidad < item.cantidad) {
+                    const ref = await client.query('SELECT nombre FROM refacciones WHERE id = $1', [item.refaccion_id]);
+                    throw new Error(`Stock insuficiente para "${ref.rows[0].nombre}"`);
+                }
+                await client.query(
+                    'UPDATE refacciones SET cantidad = cantidad - $1 WHERE id = $2',
+                    [item.cantidad, item.refaccion_id]
+                );
+            }
+        }
+
+        // Actualizar estado
+        await client.query('UPDATE movimientos SET estado = $1 WHERE id = $2', [estado, id]);
+
+        await client.query('COMMIT');
+
+        res.json({ message: `Movimiento ${estado}`, id });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error en PUT /movimientos/estado:', error);
+        res.status(500).json({ error: error.message || 'Error al cambiar estado' });
+    } finally {
+        client.release();
+    }
+});
+// ENDPOINTS DE REPORTES EXCEL Y PDF
+const ExcelJS = require('exceljs');
+
+// GET /api/reportes/movimientos - Exportar a Excel
+app.get('/api/reportes/movimientos', verificarToken, async (req, res) => {
+    try {
+        // Solo bodega
+        if (req.usuario.rol !== 'bodega') {
+            return res.status(403).json({ error: 'No autorizado' });
+        }
+
+        const { fecha_inicio, fecha_fin, tipo, empresa } = req.query;
+        let query = `
+            SELECT m.*, 
+                   u.nombre as solicitante_nombre,
+                   ubi.nombre as ubicacion_nombre,
+                   eq.nombre as equipo_nombre,
+                   (SELECT SUM(mi.cantidad) FROM movimiento_items mi WHERE mi.movimiento_id = m.id) as total_items,
+                   (SELECT SUM(mi.cantidad * mi.precio_unitario) FROM movimiento_items mi WHERE mi.movimiento_id = m.id) as total_monto
+            FROM movimientos m
+            LEFT JOIN usuarios u ON m.solicitante_id = u.id
+            LEFT JOIN ubicaciones ubi ON m.ubicacion_destino_id = ubi.id
+            LEFT JOIN equipos eq ON m.equipo_id = eq.id
+            WHERE 1=1
+        `;
+        const params = [];
+        let idx = 1;
+
+        if (fecha_inicio) {
+            query += ` AND m.fecha >= $${idx}`;
+            params.push(fecha_inicio);
+            idx++;
+        }
+        if (fecha_fin) {
+            query += ` AND m.fecha <= $${idx}`;
+            params.push(fecha_fin);
+            idx++;
+        }
+        if (tipo) {
+            query += ` AND m.tipo = $${idx}`;
+            params.push(tipo);
+            idx++;
+        }
+        if (empresa) {
+            query += ` AND m.empresa = $${idx}`;
+            params.push(empresa);
+            idx++;
+        }
+
+        query += ` ORDER BY m.fecha DESC`;
+        const result = await pool.query(query, params);
+
+        // Crear libro de Excel
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Movimientos');
+
+        // Definir columnas
+        worksheet.columns = [
+            { header: 'Fecha', key: 'fecha', width: 15 },
+            { header: 'Tipo', key: 'tipo', width: 12 },
+            { header: 'Número', key: 'numero_nota', width: 18 },
+            { header: 'Empresa', key: 'empresa', width: 20 },
+            { header: 'Solicitante', key: 'solicitante', width: 25 },
+            { header: 'Ubicación', key: 'ubicacion', width: 25 },
+            { header: 'Equipo', key: 'equipo', width: 20 },
+            { header: 'Items', key: 'items', width: 10 },
+            { header: 'Total ($)', key: 'total', width: 15 },
+            { header: 'Estado', key: 'estado', width: 15 }
+        ];
+
+        // Estilo de encabezados
+        worksheet.getRow(1).font = { bold: true };
+        worksheet.getRow(1).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF0B3D91' }
+        };
+        worksheet.getRow(1).font = { color: { argb: 'FFFFFFFF' } };
+
+        // Agregar datos
+        result.rows.forEach(m => {
+            worksheet.addRow({
+                fecha: new Date(m.fecha).toLocaleDateString('es-MX'),
+                tipo: m.tipo === 'entrada' ? 'Entrada' : 'Salida',
+                numero_nota: m.numero_nota,
+                empresa: m.empresa || 'N/A',
+                solicitante: m.solicitante_nombre || 'N/A',
+                ubicacion: m.ubicacion_nombre || 'N/A',
+                equipo: m.equipo_nombre || 'N/A',
+                items: m.total_items || 0,
+                total: m.total_monto || 0,
+                estado: m.estado
+            });
+        });
+
+        // Configurar respuesta
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename=movimientos_${new Date().toISOString().split('T')[0]}.xlsx`);
+        await workbook.xlsx.write(res);
+        res.end();
+    } catch (error) {
+        console.error('Error en reporte movimientos:', error);
+        res.status(500).json({ error: 'Error al generar reporte' });
+    }
+});
+// GET /api/reportes/movimientos-detalle - Detalle con items
+app.get('/api/reportes/movimientos-detalle', verificarToken, async (req, res) => {
+    try {
+        if (req.usuario.rol !== 'bodega') {
+            return res.status(403).json({ error: 'No autorizado' });
+        }
+
+        const { fecha_inicio, fecha_fin, tipo, empresa } = req.query;
+        let query = `
+            SELECT 
+                m.fecha,
+                m.tipo,
+                m.numero_nota,
+                m.empresa,
+                u.nombre as solicitante,
+                ubi.nombre as ubicacion,
+                eq.nombre as equipo,
+                r.codigo,
+                r.nombre as refaccion,
+                mi.cantidad,
+                mi.precio_unitario,
+                mi.tipo_refaccion,
+                (mi.cantidad * mi.precio_unitario) as subtotal
+            FROM movimiento_items mi
+            JOIN movimientos m ON mi.movimiento_id = m.id
+            JOIN refacciones r ON mi.refaccion_id = r.id
+            LEFT JOIN usuarios u ON m.solicitante_id = u.id
+            LEFT JOIN ubicaciones ubi ON m.ubicacion_destino_id = ubi.id
+            LEFT JOIN equipos eq ON m.equipo_id = eq.id
+            WHERE 1=1
+        `;
+        const params = [];
+        let idx = 1;
+
+        if (fecha_inicio) {
+            query += ` AND m.fecha >= $${idx}`;
+            params.push(fecha_inicio);
+            idx++;
+        }
+        if (fecha_fin) {
+            query += ` AND m.fecha <= $${idx}`;
+            params.push(fecha_fin);
+            idx++;
+        }
+        if (tipo) {
+            query += ` AND m.tipo = $${idx}`;
+            params.push(tipo);
+            idx++;
+        }
+        if (empresa) {
+            query += ` AND m.empresa = $${idx}`;
+            params.push(empresa);
+            idx++;
+        }
+
+        query += ` ORDER BY m.fecha DESC, m.id DESC`;
+        const result = await pool.query(query, params);
+
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Detalle Movimientos');
+
+        worksheet.columns = [
+            { header: 'Fecha', key: 'fecha', width: 15 },
+            { header: 'Tipo', key: 'tipo', width: 12 },
+            { header: 'Número', key: 'numero_nota', width: 18 },
+            { header: 'Empresa', key: 'empresa', width: 20 },
+            { header: 'Solicitante', key: 'solicitante', width: 25 },
+            { header: 'Ubicación', key: 'ubicacion', width: 25 },
+            { header: 'Equipo', key: 'equipo', width: 20 },
+            { header: 'Código', key: 'codigo', width: 15 },
+            { header: 'Refacción', key: 'refaccion', width: 30 },
+            { header: 'Cantidad', key: 'cantidad', width: 12 },
+            { header: 'Precio', key: 'precio', width: 15 },
+            { header: 'Tipo', key: 'tipo_refaccion', width: 12 },
+            { header: 'Subtotal', key: 'subtotal', width: 15 }
+        ];
+
+        worksheet.getRow(1).font = { bold: true };
+        worksheet.getRow(1).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF0B3D91' }
+        };
+        worksheet.getRow(1).font = { color: { argb: 'FFFFFFFF' } };
+
+        result.rows.forEach(row => {
+            worksheet.addRow({
+                fecha: new Date(row.fecha).toLocaleDateString('es-MX'),
+                tipo: row.tipo === 'entrada' ? 'Entrada' : 'Salida',
+                numero_nota: row.numero_nota,
+                empresa: row.empresa || 'N/A',
+                solicitante: row.solicitante || 'N/A',
+                ubicacion: row.ubicacion || 'N/A',
+                equipo: row.equipo || 'N/A',
+                codigo: row.codigo,
+                refaccion: row.refaccion,
+                cantidad: row.cantidad,
+                precio: row.precio_unitario,
+                tipo_refaccion: row.tipo_refaccion || 'Nueva',
+                subtotal: row.subtotal
+            });
+        });
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename=detalle_movimientos_${new Date().toISOString().split('T')[0]}.xlsx`);
+        await workbook.xlsx.write(res);
+        res.end();
+    } catch (error) {
+        console.error('Error en reporte detalle:', error);
+        res.status(500).json({ error: 'Error al generar reporte detalle' });
+    }
+});
+// GET /api/reportes/movimientos-detalle - Detalle con items
+app.get('/api/reportes/movimientos-detalle', verificarToken, async (req, res) => {
+    try {
+        if (req.usuario.rol !== 'bodega') {
+            return res.status(403).json({ error: 'No autorizado' });
+        }
+
+        const { fecha_inicio, fecha_fin, tipo, empresa } = req.query;
+        let query = `
+            SELECT 
+                m.fecha,
+                m.tipo,
+                m.numero_nota,
+                m.empresa,
+                u.nombre as solicitante,
+                ubi.nombre as ubicacion,
+                eq.nombre as equipo,
+                r.codigo,
+                r.nombre as refaccion,
+                mi.cantidad,
+                mi.precio_unitario,
+                mi.tipo_refaccion,
+                (mi.cantidad * mi.precio_unitario) as subtotal
+            FROM movimiento_items mi
+            JOIN movimientos m ON mi.movimiento_id = m.id
+            JOIN refacciones r ON mi.refaccion_id = r.id
+            LEFT JOIN usuarios u ON m.solicitante_id = u.id
+            LEFT JOIN ubicaciones ubi ON m.ubicacion_destino_id = ubi.id
+            LEFT JOIN equipos eq ON m.equipo_id = eq.id
+            WHERE 1=1
+        `;
+        const params = [];
+        let idx = 1;
+
+        if (fecha_inicio) {
+            query += ` AND m.fecha >= $${idx}`;
+            params.push(fecha_inicio);
+            idx++;
+        }
+        if (fecha_fin) {
+            query += ` AND m.fecha <= $${idx}`;
+            params.push(fecha_fin);
+            idx++;
+        }
+        if (tipo) {
+            query += ` AND m.tipo = $${idx}`;
+            params.push(tipo);
+            idx++;
+        }
+        if (empresa) {
+            query += ` AND m.empresa = $${idx}`;
+            params.push(empresa);
+            idx++;
+        }
+
+        query += ` ORDER BY m.fecha DESC, m.id DESC`;
+        const result = await pool.query(query, params);
+
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Detalle Movimientos');
+
+        worksheet.columns = [
+            { header: 'Fecha', key: 'fecha', width: 15 },
+            { header: 'Tipo', key: 'tipo', width: 12 },
+            { header: 'Número', key: 'numero_nota', width: 18 },
+            { header: 'Empresa', key: 'empresa', width: 20 },
+            { header: 'Solicitante', key: 'solicitante', width: 25 },
+            { header: 'Ubicación', key: 'ubicacion', width: 25 },
+            { header: 'Equipo', key: 'equipo', width: 20 },
+            { header: 'Código', key: 'codigo', width: 15 },
+            { header: 'Refacción', key: 'refaccion', width: 30 },
+            { header: 'Cantidad', key: 'cantidad', width: 12 },
+            { header: 'Precio', key: 'precio', width: 15 },
+            { header: 'Tipo', key: 'tipo_refaccion', width: 12 },
+            { header: 'Subtotal', key: 'subtotal', width: 15 }
+        ];
+
+        worksheet.getRow(1).font = { bold: true };
+        worksheet.getRow(1).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF0B3D91' }
+        };
+        worksheet.getRow(1).font = { color: { argb: 'FFFFFFFF' } };
+
+        result.rows.forEach(row => {
+            worksheet.addRow({
+                fecha: new Date(row.fecha).toLocaleDateString('es-MX'),
+                tipo: row.tipo === 'entrada' ? 'Entrada' : 'Salida',
+                numero_nota: row.numero_nota,
+                empresa: row.empresa || 'N/A',
+                solicitante: row.solicitante || 'N/A',
+                ubicacion: row.ubicacion || 'N/A',
+                equipo: row.equipo || 'N/A',
+                codigo: row.codigo,
+                refaccion: row.refaccion,
+                cantidad: row.cantidad,
+                precio: row.precio_unitario,
+                tipo_refaccion: row.tipo_refaccion || 'Nueva',
+                subtotal: row.subtotal
+            });
+        });
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename=detalle_movimientos_${new Date().toISOString().split('T')[0]}.xlsx`);
+        await workbook.xlsx.write(res);
+        res.end();
+    } catch (error) {
+        console.error('Error en reporte detalle:', error);
+        res.status(500).json({ error: 'Error al generar reporte detalle' });
+    }
+});
+const PDFDocument = require('pdfkit');
+
+// GET /api/reportes/orden/:id - Generar orden de salida en PDF
+app.get('/api/reportes/orden/:id', verificarToken, async (req, res) => {
+    try {
+        if (req.usuario.rol !== 'bodega') {
+            return res.status(403).json({ error: 'No autorizado' });
+        }
+
+        const { id } = req.params;
+        // Obtener movimiento con items
+        const movResult = await pool.query(`
+            SELECT m.*, 
+                   u.nombre as solicitante_nombre,
+                   ubi.nombre as ubicacion_nombre,
+                   eq.nombre as equipo_nombre
+            FROM movimientos m
+            LEFT JOIN usuarios u ON m.solicitante_id = u.id
+            LEFT JOIN ubicaciones ubi ON m.ubicacion_destino_id = ubi.id
+            LEFT JOIN equipos eq ON m.equipo_id = eq.id
+            WHERE m.id = $1
+        `, [id]);
+
+        if (movResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Movimiento no encontrado' });
+        }
+
+        const m = movResult.rows[0];
+        const itemsResult = await pool.query(`
+            SELECT mi.*, r.codigo, r.nombre as refaccion_nombre
+            FROM movimiento_items mi
+            JOIN refacciones r ON mi.refaccion_id = r.id
+            WHERE mi.movimiento_id = $1
+        `, [id]);
+
+        // Generar PDF
+        const doc = new PDFDocument({ margin: 50 });
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename=orden_${m.numero_nota}.pdf`);
+        doc.pipe(res);
+
+        // Membrete
+        doc.fontSize(16).font('Helvetica-Bold').text('GAS TECOMATLÁN', { align: 'center' });
+        doc.fontSize(12).font('Helvetica').text('Sistema de Inventario de Refacciones', { align: 'center' });
+        doc.moveDown(0.5);
+        doc.fontSize(10).text('Carretera Federal 180 Km 42, Tecomatlán, Puebla', { align: 'center' });
+        doc.text('Tel: 222-123-4567 | Email: bodega@gastecomatlan.com', { align: 'center' });
+        doc.moveDown(1);
+
+        // Línea separadora
+        doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke('#0B3D91');
+        doc.moveDown(0.5);
+
+        // Título
+        doc.fontSize(14).font('Helvetica-Bold').text(`ORDEN DE SALIDA No. ${m.numero_nota}`, { align: 'center' });
+        doc.moveDown(0.5);
+
+        // Información
+        doc.fontSize(10).font('Helvetica');
+        doc.text(`Fecha: ${new Date(m.fecha).toLocaleDateString('es-MX')}`);
+        doc.text(`Solicitante: ${m.solicitante_nombre || 'N/A'}`);
+        doc.text(`Empresa: ${m.empresa || 'N/A'}`);
+        doc.text(`Ubicación destino: ${m.ubicacion_nombre || 'N/A'}`);
+        if (m.equipo_nombre) doc.text(`Equipo: ${m.equipo_nombre}`);
+        doc.text(`Estado: ${m.estado}`);
+        if (m.observaciones) doc.text(`Observaciones: ${m.observaciones}`);
+        doc.moveDown(0.5);
+
+        // Tabla de items
+        const tableTop = doc.y + 10;
+        const headers = ['Código', 'Refacción', 'Cantidad', 'Precio', 'Subtotal'];
+        const colWidths = [80, 180, 70, 80, 100];
+        let currentY = tableTop;
+
+        // Encabezados de tabla
+        doc.font('Helvetica-Bold').fontSize(10);
+        let currentX = 50;
+        headers.forEach((h, i) => {
+            doc.rect(currentX, currentY, colWidths[i], 20).stroke();
+            doc.text(h, currentX + 5, currentY + 4);
+            currentX += colWidths[i];
+        });
+
+        // Datos
+        doc.font('Helvetica').fontSize(10);
+        currentY += 20;
+        let total = 0;
+        itemsResult.rows.forEach((item, index) => {
+            const subtotal = item.cantidad * item.precio_unitario;
+            total += subtotal;
+            currentX = 50;
+            const rowY = currentY + (index * 20);
+            
+            // Verificar si necesitamos nueva página
+            if (rowY > 700) {
+                doc.addPage();
+                currentY = 50;
+                // Repetir encabezados
+                // ... (podemos simplificar)
+            }
+
+            const data = [
+                item.codigo,
+                item.refaccion_nombre,
+                item.cantidad,
+                `$${item.precio_unitario.toFixed(2)}`,
+                `$${subtotal.toFixed(2)}`
+            ];
+            data.forEach((d, i) => {
+                doc.rect(currentX, rowY, colWidths[i], 20).stroke();
+                doc.text(d.toString(), currentX + 5, rowY + 4);
+                currentX += colWidths[i];
+            });
+        });
+
+        // Total
+        currentY += itemsResult.rows.length * 20;
+        doc.font('Helvetica-Bold');
+        doc.text(`TOTAL: $${total.toFixed(2)}`, 50, currentY + 10, { align: 'right' });
+
+        // Firma
+        doc.moveDown(3);
+        doc.font('Helvetica').fontSize(10);
+        doc.text('___________________________________', 150, doc.y);
+        doc.text('Nombre y firma del responsable', 180, doc.y + 5);
+
+        doc.end();
+    } catch (error) {
+        console.error('Error en orden PDF:', error);
+        res.status(500).json({ error: 'Error al generar orden' });
+    }
+});
+// GET /api/reportes/inventario - Stock actual
+app.get('/api/reportes/inventario', verificarToken, async (req, res) => {
+    try {
+        if (req.usuario.rol !== 'bodega') {
+            return res.status(403).json({ error: 'No autorizado' });
+        }
+
+        const { categoria, empresa } = req.query;
+        let query = 'SELECT * FROM refacciones WHERE 1=1';
+        const params = [];
+        let idx = 1;
+
+        if (categoria) {
+            query += ` AND categoria = $${idx}`;
+            params.push(categoria);
+            idx++;
+        }
+        if (empresa) {
+            query += ` AND empresa = $${idx}`;
+            params.push(empresa);
+            idx++;
+        }
+
+        query += ` ORDER BY codigo`;
+        const result = await pool.query(query, params);
+
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Inventario');
+
+        worksheet.columns = [
+            { header: 'Código', key: 'codigo', width: 15 },
+            { header: 'Nombre', key: 'nombre', width: 30 },
+            { header: 'Categoría', key: 'categoria', width: 20 },
+            { header: 'Para qué es', key: 'para_que_es', width: 30 },
+            { header: 'Cantidad', key: 'cantidad', width: 12 },
+            { header: 'Stock Mínimo', key: 'minimo', width: 15 },
+            { header: 'Precio', key: 'precio', width: 15 },
+            { header: 'Valor Total', key: 'valor', width: 15 },
+            { header: 'Empresa', key: 'empresa', width: 20 }
+        ];
+
+        worksheet.getRow(1).font = { bold: true };
+        worksheet.getRow(1).fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF0B3D91' }
+        };
+        worksheet.getRow(1).font = { color: { argb: 'FFFFFFFF' } };
+
+        result.rows.forEach(r => {
+            worksheet.addRow({
+                codigo: r.codigo,
+                nombre: r.nombre,
+                categoria: r.categoria,
+                para_que_es: r.para_que_es || 'N/A',
+                cantidad: r.cantidad,
+                minimo: r.stock_minimo,
+                precio: r.precio,
+                valor: r.cantidad * r.precio,
+                empresa: r.empresa
+            });
+        });
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename=inventario_${new Date().toISOString().split('T')[0]}.xlsx`);
+        await workbook.xlsx.write(res);
+        res.end();
+    } catch (error) {
+        console.error('Error en reporte inventario:', error);
+        res.status(500).json({ error: 'Error al generar reporte inventario' });
+    }
+});
+// Servir archivos estáticos (frontend)
+app.use(express.static('public'));
+app.use('/uploads', express.static('public/uploads'));
+
+// Log para depuración (muestra las peticiones)
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.url}`);
+    next();
+});
+
+// Conexión a PostgreSQL
+const pool = new Pool({
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+});
+
+pool.connect((err) => {
+    if (err) {
+        console.error('Error conectando a PostgreSQL:', err);
+        process.exit(1);
+    } else {
+        console.log('Conectado a PostgreSQL');
+    }
+});
+
+// Ruta de login
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        // Imprimir el body para depuración
+        console.log('Body recibido:', req.body);
+
+        const { usuario, contrasena } = req.body;
+        if (!usuario || !contrasena) {
+            return res.status(400).json({ error: 'Faltan usuario o contraseña' });
+        }
+
+        // Buscar usuario en la base de datos
+        const result = await pool.query(
+            'SELECT id, nombre, usuario, contrasena, empresa, ubicacion_id, rol, activo FROM usuarios WHERE usuario = $1',
+            [usuario.toLowerCase()]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(401).json({ error: 'Usuario no encontrado' });
+        }
+
+        const user = result.rows[0];
+
+        if (!user.activo) {
+            return res.status(401).json({ error: 'Usuario desactivado' });
+        }
+
+        // Comparar contraseña (texto plano por ahora, luego lo hasheamos)
+        if (contrasena !== user.contrasena) {
+            return res.status(401).json({ error: 'Contraseña incorrecta' });
+        }
+
+        // Generar token JWT
+        const token = jwt.sign(
+            { id: user.id, usuario: user.usuario, rol: user.rol },
+            process.env.JWT_SECRET,
+            { expiresIn: '8h' }
+        );
+
+        const { contrasena: _, ...userData } = user;
+        res.json({
+            token,
+            usuario: userData,
+        });
+    } catch (error) {
+        console.error('Error en login:', error);
+        res.status(500).json({ error: 'Error interno del servidor', detalle: error.message });
+    }
+});
+
+// Ruta de prueba
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'OK', timestamp: new Date() });
+});
+
+app.listen(port, () => {
+    console.log(`Servidor corriendo en http://localhost:${port}`);
+});

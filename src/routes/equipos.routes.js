@@ -4,7 +4,11 @@ const { pool } = require('../config/db');
 const { verificarToken } = require('../middlewares/auth');
 
 
+<<<<<<< HEAD
 router.get('/api/equipos', verificarToken, async (req, res) => {
+=======
+router.get('/equipos', verificarToken, async (req, res) => {
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     try {
         const { ubicacion_id, empresa } = req.query;
         let query = 'SELECT * FROM equipos WHERE 1=1';
@@ -37,8 +41,13 @@ router.get('/api/equipos', verificarToken, async (req, res) => {
         res.status(500).json({ error: 'Error al obtener equipos' });
     }
 });
+<<<<<<< HEAD
 // GET /api/equipos/:id - Obtener un equipo por ID
 router.get('/api/equipos/:id', verificarToken, async (req, res) => {
+=======
+// GET /equipos/:id - Obtener un equipo por ID
+router.get('/equipos/:id', verificarToken, async (req, res) => {
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     try {
         const { id } = req.params;
         const result = await pool.query('SELECT * FROM equipos WHERE id = $1', [id]);
@@ -51,8 +60,13 @@ router.get('/api/equipos/:id', verificarToken, async (req, res) => {
         res.status(500).json({ error: 'Error al obtener el equipo' });
     }
 });
+<<<<<<< HEAD
 // POST /api/equipos - Crear equipo (solo bodega)
 router.post('/api/equipos', verificarToken, async (req, res) => {
+=======
+// POST /equipos - Crear equipo (solo bodega)
+router.post('/equipos', verificarToken, async (req, res) => {
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     try {
         if (req.usuario.rol !== 'bodega') {
             return res.status(403).json({ error: 'No autorizado' });
@@ -72,8 +86,13 @@ router.post('/api/equipos', verificarToken, async (req, res) => {
     }
 });
 
+<<<<<<< HEAD
 // PUT /api/equipos/:id - Actualizar equipo (solo bodega)
 router.put('/api/equipos/:id', verificarToken, async (req, res) => {
+=======
+// PUT /equipos/:id - Actualizar equipo (solo bodega)
+router.put('/equipos/:id', verificarToken, async (req, res) => {
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     try {
         if (req.usuario.rol !== 'bodega') {
             return res.status(403).json({ error: 'No autorizado' });
@@ -100,8 +119,13 @@ router.put('/api/equipos/:id', verificarToken, async (req, res) => {
     }
 });
 
+<<<<<<< HEAD
 // DELETE /api/equipos/:id - Eliminar equipo (solo bodega)
 router.delete('/api/equipos/:id', verificarToken, async (req, res) => {
+=======
+// DELETE /equipos/:id - Eliminar equipo (solo bodega)
+router.delete('/equipos/:id', verificarToken, async (req, res) => {
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     try {
         if (req.usuario.rol !== 'bodega') {
             return res.status(403).json({ error: 'No autorizado' });
@@ -119,6 +143,10 @@ router.delete('/api/equipos/:id', verificarToken, async (req, res) => {
 });
 // ENDPOINTS DE UBICACIONES
 
+<<<<<<< HEAD
 // GET /api/ubicaciones - Listar ubicaciones con filtros opcionales
+=======
+// GET /ubicaciones - Listar ubicaciones con filtros opcionales
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
 
 module.exports = router;
