@@ -1,15 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/db');
-<<<<<<< HEAD
-const { verificarToken } = require('../middlewares/auth');
-=======
 const {
   verificarToken,
   requireReportes
 } = require('../middlewares/auth');
 const { crearPdfReporte } = require('../services/pdfReportes.service');
->>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
 
 function aplicarFiltrosMovimiento(base, params, filtros, usuario) {
   let query = base;
@@ -184,75 +180,6 @@ function enviarExcel(res, tipo, rows) {
   res.send(html);
 }
 
-<<<<<<< HEAD
-function pdfBasico(titulo, rows) {
-  const cols = columnasDe(rows);
-  const lines = [titulo, `Generado: ${new Date().toLocaleString('es-MX')}`, ''];
-  lines.push(cols.join(' | '));
-  lines.push('-'.repeat(100));
-  rows.slice(0, 80).forEach(r => {
-    lines.push(cols.map(c => String(r[c] ?? '').replace(/\s+/g, ' ').slice(0, 22)).join(' | '));
-  });
-  if (rows.length > 80) lines.push(`... ${rows.length - 80} registros adicionales`);
-  if (!rows.length) lines.push('Sin resultados');
-
-  const content = lines.join('\n').replace(/[()\\]/g, '\\$&');
-  const stream = `BT /F1 10 Tf 40 780 Td 12 TL (${content}) Tj ET`;
-  const objects = [
-    '1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj',
-    '2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj',
-    '3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >> endobj',
-    '4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Courier >> endobj',
-    `5 0 obj << /Length ${Buffer.byteLength(stream)} >> stream\n${stream}\nendstream endobj`,
-  ];
-  let pdf = '%PDF-1.4\n';
-  const offsets = [0];
-  objects.forEach(obj => { offsets.push(Buffer.byteLength(pdf)); pdf += obj + '\n'; });
-  const xref = Buffer.byteLength(pdf);
-  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
-  offsets.slice(1).forEach(o => { pdf += String(o).padStart(10, '0') + ' 00000 n \n'; });
-  pdf += `trailer << /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
-  return Buffer.from(pdf, 'binary');
-}
-
-function enviarPdf(res, tipo, rows) {
-  const buffer = pdfBasico(nombreReporte(tipo), rows);
-  res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `attachment; filename="${nombreReporte(tipo).replace(/\s+/g, '_')}.pdf"`);
-  res.send(buffer);
-}
-
-router.get('/api/reportes/buscar', verificarToken, async (req, res) => {
-  try {
-    const tipo = req.query.tipo || 'movimientos';
-    const rows = await obtenerReporte(tipo, req.query, req.usuario);
-    res.json({ tipo, titulo: nombreReporte(tipo), total: rows.length, rows });
-  } catch (error) {
-    console.error('Error en reportes/buscar:', error);
-    res.status(500).json({ error: 'Error al generar reporte', detalle: error.message });
-  }
-});
-
-router.get('/api/reportes/:tipo/excel', verificarToken, async (req, res) => {
-  try {
-    const rows = await obtenerReporte(req.params.tipo, req.query, req.usuario);
-    enviarExcel(res, req.params.tipo, rows);
-  } catch (error) {
-    console.error('Error exportando Excel:', error);
-    res.status(500).json({ error: 'Error al exportar Excel', detalle: error.message });
-  }
-});
-
-router.get('/api/reportes/:tipo/pdf', verificarToken, async (req, res) => {
-  try {
-    const rows = await obtenerReporte(req.params.tipo, req.query, req.usuario);
-    enviarPdf(res, req.params.tipo, rows);
-  } catch (error) {
-    console.error('Error exportando PDF:', error);
-    res.status(500).json({ error: 'Error al exportar PDF', detalle: error.message });
-  }
-});
-=======
 router.get(
   '/reportes/buscar',
   verificarToken,
@@ -332,6 +259,5 @@ router.get(
     }
   }
 );
->>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
 
 module.exports = router;

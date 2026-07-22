@@ -1,20 +1,12 @@
 const express = require('express');
 const router = express.Router();
-<<<<<<< HEAD
-=======
 const bcrypt = require('bcrypt');
->>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
 const { pool } = require('../config/db');
 const { verificarToken } = require('../middlewares/auth');
 
 
-<<<<<<< HEAD
-// GET /api/usuarios - Listar usuarios (solo para bodega y encargados)
-router.get('/api/usuarios', verificarToken, async (req, res) => {
-=======
 // GET /usuarios - Listar usuarios (solo para bodega y encargados)
 router.get('/usuarios', verificarToken, async (req, res) => {
->>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     try {
         // Si el usuario no es bodega, solo puede ver usuarios de su empresa
         let query = 'SELECT id, nombre, usuario, empresa, ubicacion_id, rol, activo FROM usuarios';
@@ -32,13 +24,8 @@ router.get('/usuarios', verificarToken, async (req, res) => {
     }
 });
 
-<<<<<<< HEAD
-// POST /api/usuarios - Crear usuario (solo bodega)
-router.post('/api/usuarios', verificarToken, async (req, res) => {
-=======
 // POST /usuarios - Crear usuario (solo bodega)
 router.post('/usuarios', verificarToken, async (req, res) => {
->>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     try {
         if (req.usuario.rol !== 'bodega') { return res.status(403).json({ error: 'No autorizado' }); }
         const { nombre, usuario, contrasena, empresa, ubicacion_id, rol, activo = true } = req.body;
@@ -63,13 +50,8 @@ router.post('/usuarios', verificarToken, async (req, res) => {
     }
 });
 
-<<<<<<< HEAD
-// PUT /api/usuarios/:id - Actualizar usuario (solo bodega)
-router.put('/api/usuarios/:id', verificarToken, async (req, res) => {
-=======
 // PUT /usuarios/:id - Actualizar usuario (solo bodega)
 router.put('/usuarios/:id', verificarToken, async (req, res) => {
->>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     try {
         if (req.usuario.rol !== 'bodega') { return res.status(403).json({ error: 'No autorizado' }); }
         const { id } = req.params;
@@ -97,13 +79,8 @@ router.put('/usuarios/:id', verificarToken, async (req, res) => {
     }
 });
 
-<<<<<<< HEAD
-// DELETE /api/usuarios/:id - Desactivar usuario (solo bodega)
-router.delete('/api/usuarios/:id', verificarToken, async (req, res) => {
-=======
 // DELETE /usuarios/:id - Desactivar usuario (solo bodega)
 router.delete('/usuarios/:id', verificarToken, async (req, res) => {
->>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     try {
         if (req.usuario.rol !== 'bodega') { return res.status(403).json({ error: 'No autorizado' }); }
         const { id } = req.params;

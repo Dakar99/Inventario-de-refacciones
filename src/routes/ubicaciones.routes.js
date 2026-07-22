@@ -3,13 +3,8 @@ const router = express.Router();
 const { pool } = require("../config/db");
 const { verificarToken, requireBodega } = require("../middlewares/auth");
 
-<<<<<<< HEAD
-// GET /api/ubicaciones
-router.get("/api/ubicaciones", verificarToken, async (req, res) => {
-=======
 // GET /ubicaciones
 router.get("/ubicaciones", verificarToken, async (req, res) => {
->>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
   try {
     const { tipo } = req.query;
     let empresa = req.query.empresa;
@@ -44,13 +39,8 @@ router.get("/ubicaciones", verificarToken, async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
-// GET /api/ubicaciones/:id
-router.get("/api/ubicaciones/:id", verificarToken, async (req, res) => {
-=======
 // GET /ubicaciones/:id
 router.get("/ubicaciones/:id", verificarToken, async (req, res) => {
->>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
   try {
     const result = await pool.query(
       "SELECT * FROM ubicaciones WHERE id = $1",
@@ -68,13 +58,8 @@ router.get("/ubicaciones/:id", verificarToken, async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
-// POST /api/ubicaciones
-router.post("/api/ubicaciones", verificarToken, async (req, res) => {
-=======
 // POST /ubicaciones
 router.post("/ubicaciones", verificarToken, async (req, res) => {
->>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
   try {
     if (req.usuario.rol !== "bodega") {
       return res.status(403).json({ error: "No autorizado" });
@@ -117,13 +102,8 @@ router.post("/ubicaciones", verificarToken, async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
-// PUT /api/ubicaciones/:id
-router.put("/api/ubicaciones/:id", verificarToken, async (req, res) => {
-=======
 // PUT /ubicaciones/:id
 router.put("/ubicaciones/:id", verificarToken, async (req, res) => {
->>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
   try {
     if (req.usuario.rol !== "bodega") {
       return res.status(403).json({ error: "No autorizado" });
@@ -179,13 +159,8 @@ router.put("/ubicaciones/:id", verificarToken, async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
-// DELETE /api/ubicaciones/:id
-router.delete("/api/ubicaciones/:id", verificarToken, async (req, res) => {
-=======
 // DELETE /ubicaciones/:id
 router.delete("/ubicaciones/:id", verificarToken, async (req, res) => {
->>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
   try {
     if (req.usuario.rol !== "bodega") {
       return res.status(403).json({ error: "No autorizado" });
@@ -207,8 +182,4 @@ router.delete("/ubicaciones/:id", verificarToken, async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
 module.exports = router;
-=======
-module.exports = router;
->>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
