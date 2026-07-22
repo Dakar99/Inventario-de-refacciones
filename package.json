@@ -1,28 +1,45 @@
 {
   "name": "refaccionaria-backend",
   "version": "1.0.0",
+<<<<<<< HEAD
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
     "check": "node --check server.js"
+=======
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+<<<<<<< HEAD
   "description": "Backend para inventario de refacciones con Express y PostgreSQL",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+=======
+  "description": "",
   "dependencies": {
     "axios": "^1.18.1",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "exceljs": "^4.4.0",
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     "express": "^5.2.1",
     "express-rate-limit": "^8.5.2",
     "helmet": "^8.2.0",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.2",
+<<<<<<< HEAD
+=======
     "pdfkit": "^0.19.1",
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     "pg": "^8.22.0"
   }
 }
