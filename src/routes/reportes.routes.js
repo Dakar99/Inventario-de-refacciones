@@ -1,7 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/db');
+<<<<<<< HEAD
 const { verificarToken } = require('../middlewares/auth');
+=======
+const {
+  verificarToken,
+  requireReportes
+} = require('../middlewares/auth');
+const { crearPdfReporte } = require('../services/pdfReportes.service');
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
 
 function aplicarFiltrosMovimiento(base, params, filtros, usuario) {
   let query = base;
@@ -176,6 +184,7 @@ function enviarExcel(res, tipo, rows) {
   res.send(html);
 }
 
+<<<<<<< HEAD
 function pdfBasico(titulo, rows) {
   const cols = columnasDe(rows);
   const lines = [titulo, `Generado: ${new Date().toLocaleString('es-MX')}`, ''];
@@ -243,5 +252,86 @@ router.get('/api/reportes/:tipo/pdf', verificarToken, async (req, res) => {
     res.status(500).json({ error: 'Error al exportar PDF', detalle: error.message });
   }
 });
+=======
+router.get(
+  '/reportes/buscar',
+  verificarToken,
+  requireReportes,
+  async (req, res) => {
+    try {
+      const tipo = req.query.tipo || 'movimientos';
+      const rows = await obtenerReporte(tipo, req.query, req.usuario);
+
+      res.json({
+        tipo,
+        titulo: nombreReporte(tipo),
+        total: rows.length,
+        rows
+      });
+    } catch (error) {
+      console.error('Error en reportes/buscar:', error);
+
+      res.status(500).json({
+        error: 'Error al generar reporte',
+        detalle: error.message
+      });
+    }
+  }
+);
+
+router.get(
+  '/reportes/:tipo/excel',
+  verificarToken,
+  requireReportes,
+  async (req, res) => {
+    try {
+      const rows = await obtenerReporte(
+        req.params.tipo,
+        req.query,
+        req.usuario
+      );
+
+      enviarExcel(res, req.params.tipo, rows);
+    } catch (error) {
+      console.error('Error exportando Excel:', error);
+
+      res.status(500).json({
+        error: 'Error al exportar Excel',
+        detalle: error.message
+      });
+    }
+  }
+);
+
+router.get(
+  '/reportes/:tipo/pdf',
+  verificarToken,
+  requireReportes,
+  async (req, res) => {
+    try {
+      const rows = await obtenerReporte(
+        req.params.tipo,
+        req.query,
+        req.usuario
+      );
+
+      crearPdfReporte(
+        res,
+        req.params.tipo,
+        rows,
+        req.query,
+        req.usuario
+      );
+    } catch (error) {
+      console.error('Error exportando PDF:', error);
+
+      res.status(500).json({
+        error: 'Error al exportar PDF',
+        detalle: error.message
+      });
+    }
+  }
+);
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
 
 module.exports = router;

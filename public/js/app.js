@@ -18,8 +18,23 @@ const CAT = {
   pipa: { n: "Pipa", c: "bd-pipa" },
   planta: { n: "Planta", c: "bd-planta" },
   trailer: { n: "Trailer", c: "bd-trailer" },
+<<<<<<< HEAD
   tanque_carburacion: { n: "Tanque de Carburacion", c: "bd-tanque" },
   valvulas: { n: "Valvulas", c: "bd-valvulas" },
+=======
+
+  cilindrera: {
+    n: "Cilindrera",
+    c: "bd-cilindrera",
+  },
+
+  tanque_carburacion: {
+    n: "Tanque de Carburación",
+    c: "bd-tanque",
+  },
+
+  valvulas: { n: "Válvulas", c: "bd-valvulas" },
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
   mangueras: { n: "Mangueras", c: "bd-mangueras" },
   otro: { n: "Otro", c: "bd-otro" },
 };
@@ -38,7 +53,11 @@ const TIT = {
   equipos: { t: "Equipos", s: "Gestión de pipas, trailers y estaciones" },
 };
 function obtenerToken() {
+<<<<<<< HEAD
   return localStorage.getItem("token");
+=======
+  return sessionStorage.getItem("token");
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
 }
 
 function headersAuth() {
@@ -52,7 +71,11 @@ function usuarioActual() {
   if (S && S.usr) return S.usr;
 
   try {
+<<<<<<< HEAD
     return JSON.parse(localStorage.getItem("usuario") || "null");
+=======
+    return JSON.parse(sessionStorage.getItem("usuario") || "null");
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
   } catch (e) {
     return null;
   }
@@ -63,9 +86,15 @@ function empresaPermitida() {
 
   if (!usr) return "";
 
+<<<<<<< HEAD
   // Bodega/admin puede ver ambas empresas
   if (usr.rol === "bodega") {
     return localStorage.getItem("empresaActual") || "";
+=======
+  // Bodega ve todas las empresas
+  if (usr.rol === "bodega") {
+    return "";
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
   }
 
   // Usuarios normales solo ven su empresa
@@ -642,12 +671,20 @@ function cambiarEmpresa(empresa) {
   // El sistema ahora trabaja contra PostgreSQL por medio de la API.
   // localStorage solo conserva sesión/token, no datos del inventario.
   const token = obtenerToken();
+<<<<<<< HEAD
   const usuario = localStorage.getItem("usuario");
+=======
+  const usuario = sessionStorage.getItem("usuario");
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
   if (token && usuario) {
     try {
       const usr = JSON.parse(usuario);
       aplicarSesion(usr);
+<<<<<<< HEAD
       // verificarStock();
+=======
+      verificarStock();
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
       nav("dashboard");
     } catch (e) {
       logout();
@@ -655,7 +692,11 @@ function cambiarEmpresa(empresa) {
   }
 })();
 
+<<<<<<< HEAD
 // ===== LOGIN CON API =====
+=======
+// LOGIN
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
 function aplicarSesion(usr) {
   S.usr = usr;
 
@@ -718,8 +759,13 @@ function login() {
       return res.json();
     })
     .then((data) => {
+<<<<<<< HEAD
       localStorage.setItem("token", data.token);
       localStorage.setItem("usuario", JSON.stringify(data.usuario));
+=======
+      sessionStorage.setItem("token", data.token);
+      sessionStorage.setItem("usuario", JSON.stringify(data.usuario));
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
 
       aplicarSesion(data.usuario);
       nav("dashboard");
@@ -732,15 +778,37 @@ function login() {
 function mostrarMenuPorRol(rol) {
   const usr = usuarioActual();
 
+<<<<<<< HEAD
   const adminItems = ["ubicaciones", "usuarios", "alertas", "equipos"];
+=======
+  const soloBodega = ["ubicaciones", "usuarios", "alertas", "equipos"];
+
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
   const menuItems = document.querySelectorAll(".ni");
 
   menuItems.forEach((item) => {
     const sec = item.dataset.s;
 
+<<<<<<< HEAD
     if (adminItems.includes(sec)) {
       item.style.display = rol === "bodega" ? "flex" : "none";
     } else if (rol === "solicitante" && sec === "entradas") {
+=======
+    // Solo el bodeguero puede ver estas opciones
+    if (soloBodega.includes(sec)) {
+      item.style.display = rol === "bodega" ? "flex" : "none";
+    }
+
+    // Reportes para bodeguero y encargado
+    else if (sec === "reportes") {
+      item.style.display = ["bodega", "encargado"].includes(rol)
+        ? "flex"
+        : "none";
+    }
+
+    // El solicitante no ve Entradas
+    else if (rol === "solicitante" && sec === "entradas") {
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
       item.style.display = "none";
     } else {
       item.style.display = "flex";
@@ -763,8 +831,13 @@ function mostrarMenuPorRol(rol) {
 }
 
 function logout() {
+<<<<<<< HEAD
   localStorage.removeItem("token");
   localStorage.removeItem("usuario");
+=======
+  sessionStorage.removeItem("token");
+  sessionStorage.removeItem("usuario");
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
   S.usr = null;
   document.getElementById("app-principal").style.display = "none";
   document.getElementById("pantalla-login").style.display = "";
@@ -1015,10 +1088,49 @@ function mostrarFormularioRefaccion(r) {
         </div>
         <div class="fr">
             <div class="fg"><label>Precio unitario (MXN)</label><input type="number" id="rf-precio" value="${r?.precio ?? 0}" min="0" step="0.01"></div>
+<<<<<<< HEAD
             <div class="fg"><label>Empresa</label><select id="rf-emp">
                 <option value="tecomatlan" ${r?.empresa === "tecomatlan" ? "selected" : ""}>Gas Tecomatlán</option>
                 <option value="paraiso" ${r?.empresa === "paraiso" ? "selected" : ""}>Gas El Paraíso</option>
             </select></div>
+=======
+            <div class="fg">
+    <label>Empresa</label>
+
+    ${
+      usuarioActual()?.rol === "bodega"
+        ? `
+        <select id="rf-emp">
+            <option value="tecomatlan"
+                ${(r?.empresa || usuarioActual()?.empresa) === "tecomatlan" ? "selected" : ""}>
+                Gas Tecomatlán
+            </option>
+
+            <option value="paraiso"
+                ${(r?.empresa || usuarioActual()?.empresa) === "paraiso" ? "selected" : ""}>
+                Gas El Paraíso
+            </option>
+        </select>
+        `
+        : `
+        <input
+            type="text"
+            value="${
+              usuarioActual()?.empresa === "paraiso"
+                ? "Gas El Paraíso"
+                : "Gas Tecomatlán"
+            }"
+            readonly
+            style="background:#f5f5f5">
+
+        <input
+            type="hidden"
+            id="rf-emp"
+            value="${usuarioActual()?.empresa}">
+        `
+    }
+</div>
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
         </div>
     `;
   document.getElementById("mf").innerHTML = `
@@ -1215,6 +1327,13 @@ function rSal() {
 // MODAL NOTA
 function mNota(tipo) {
   const esE = tipo === "entrada";
+<<<<<<< HEAD
+=======
+
+  // Guardar el tipo de nota para addFila()
+  window._tipoNota = tipo;
+
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
   document.getElementById("mt").textContent = esE
     ? "Nueva Nota de Entrada"
     : "Nueva Nota de Salida (Pedimento)";
@@ -1223,6 +1342,7 @@ function mNota(tipo) {
   const queryEmpresa = paramsEmpresa.toString();
 
   Promise.all([
+<<<<<<< HEAD
     fetch(`/api/refacciones?${queryEmpresa}`, { headers: headersAuth() }).then(
       (r) => r.json(),
     ),
@@ -1235,16 +1355,45 @@ function mNota(tipo) {
     fetch(`/api/equipos?${queryEmpresa}`, { headers: headersAuth() }).then(
       (r) => r.json(),
     ),
+=======
+    fetch(`/api/refacciones?${queryEmpresa}`, {
+      headers: headersAuth(),
+    }).then((r) => r.json()),
+
+    fetch(`/api/ubicaciones?${queryEmpresa}`, {
+      headers: headersAuth(),
+    }).then((r) => r.json()),
+
+    fetch(`/api/usuarios?${queryEmpresa}`, {
+      headers: headersAuth(),
+    }).then((r) => r.json()),
+
+    fetch(`/api/equipos?${queryEmpresa}`, {
+      headers: headersAuth(),
+    }).then((r) => r.json()),
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
   ])
     .then(([refacciones, ubicaciones, usuarios, equipos]) => {
       const optsR = refacciones
         .map(
+<<<<<<< HEAD
           (r) =>
             `<option value="${r.id}">${r.codigo} - ${r.nombre} (Stock: ${r.cantidad}) [${EMP[r.empresa]?.nom || r.empresa}]</option>`,
+=======
+          (r) => `
+            <option
+              value="${r.id}"
+              data-precio="${Number(r.precio || 0)}"
+            >
+              ${r.codigo} - ${r.nombre} (Stock: ${r.cantidad})
+            </option>
+          `,
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
         )
         .join("");
 
       let html = "";
+<<<<<<< HEAD
       if (esE) {
         html += `<div class="fg"><label>Proveedor / Origen</label><input type="text" id="nt-origen" placeholder="Ej: Proveedor: Válvulas del Norte"></div>`;
       } else {
@@ -1326,6 +1475,263 @@ function mNota(tipo) {
     })
     .catch((err) => {
       toast("Error al cargar datos para el formulario", "er", "Error");
+=======
+
+      if (esE) {
+        html += `
+          <div class="fg">
+            <label>Proveedor / Origen</label>
+            <input
+              type="text"
+              id="nt-origen"
+              placeholder="Ej: Proveedor: Válvulas del Norte"
+            >
+          </div>
+        `;
+      } else {
+        const optsU = ubicaciones
+          .map(
+            (u) => `
+              <option value="${u.id}">
+                ${u.nombre} (${EMP[u.empresa]?.nom || u.empresa})
+              </option>
+            `,
+          )
+          .join("");
+
+        const usuariosFiltrados = usuarios.filter(
+          (u) => u.rol !== "bodega",
+        );
+
+        const optsUs = usuariosFiltrados
+          .map(
+            (u) => `
+              <option value="${u.id}">
+                ${u.nombre} (${EMP[u.empresa]?.nom || u.empresa})
+              </option>
+            `,
+          )
+          .join("");
+
+        html += `
+          <div class="fr">
+            <div class="fg">
+              <label>Empresa que solicita</label>
+              <select id="nt-empresa">
+                <option value="tecomatlan">Gas Tecomatlán</option>
+                <option value="paraiso">Gas El Paraíso</option>
+              </select>
+            </div>
+
+            <div class="fg">
+              <label>Quién solicita</label>
+              <select id="nt-solicita">
+                ${optsUs}
+              </select>
+            </div>
+          </div>
+        `;
+
+        html += `
+          <div class="fg">
+            <label>Ubicación destino</label>
+            <select
+              id="nt-destino"
+              onchange="cargarEquiposPorUbicacion()"
+            >
+              ${optsU}
+            </select>
+          </div>
+        `;
+
+        html += `
+          <div class="fg">
+            <label>Equipo (Pipa, Trailer, etc.)</label>
+            <select id="nt-equipo">
+              <option value="">-- Seleccionar equipo --</option>
+            </select>
+          </div>
+        `;
+      }
+
+      html += `
+        <div style="margin-bottom:14px">
+          <label
+            style="
+              display:block;
+              font-weight:600;
+              font-size:10px;
+              color:var(--tc);
+              margin-bottom:6px;
+              text-transform:uppercase;
+              letter-spacing:.5px
+            "
+          >
+            Refacciones
+          </label>
+
+          <div id="nt-items">
+            <div
+              class="nt-row"
+              style="
+                display:grid;
+                grid-template-columns:1.5fr 0.8fr 0.8fr 0.8fr 1fr 0.8fr 36px;
+                gap:6px;
+                margin-bottom:6px;
+                align-items:end
+              "
+            >
+              <div>
+                <select
+                  class="nt-r"
+                  onchange="actualizarPrecio(this)"
+                  style="
+                    width:100%;
+                    padding:7px;
+                    border:2px solid var(--b);
+                    border-radius:8px;
+                    font-size:12px
+                  "
+                >
+                  ${optsR}
+                </select>
+              </div>
+
+              <div>
+                <input
+                  type="number"
+                  class="nt-c"
+                  value="1"
+                  min="1"
+                  style="
+                    width:100%;
+                    padding:7px;
+                    border:2px solid var(--b);
+                    border-radius:8px;
+                    font-size:12px
+                  "
+                  placeholder="Cant."
+                >
+              </div>
+
+              <div>
+                <input
+                  type="number"
+                  class="nt-p"
+                  value="0"
+                  min="0"
+                  step="0.01"
+                  ${esE ? "" : "readonly"}
+                  style="
+                    width:100%;
+                    padding:7px;
+                    border:2px solid var(--b);
+                    border-radius:8px;
+                    font-size:12px;
+                    ${
+                      esE
+                        ? ""
+                        : "background:#f5f5f5;cursor:not-allowed;"
+                    }
+                  "
+                  placeholder="Precio"
+                >
+              </div>
+
+              <div>
+                <select
+                  class="nt-tipo"
+                  style="
+                    width:100%;
+                    padding:7px;
+                    border:2px solid var(--b);
+                    border-radius:8px;
+                    font-size:12px
+                  "
+                >
+                  <option value="nueva">Nueva</option>
+                  <option value="usada">Usada</option>
+                </select>
+              </div>
+
+              <div>
+                <input
+                  type="file"
+                  class="nt-foto"
+                  accept="image/*"
+                  capture="environment"
+                  style="
+                    width:100%;
+                    padding:4px;
+                    border:2px solid var(--b);
+                    border-radius:8px;
+                    font-size:11px
+                  "
+                >
+              </div>
+
+              <button
+                class="bi dg"
+                onclick="this.closest('.nt-row').remove()"
+              >
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          </div>
+
+          <button
+            class="btn btn-s btn-sm"
+            onclick="addFila()"
+          >
+            <i class="fa-solid fa-plus"></i>
+            Agregar refacción
+          </button>
+        </div>
+      `;
+
+      html += `
+        <div class="fg">
+          <label>Notas / Observaciones</label>
+          <textarea
+            id="nt-obs"
+            placeholder="Observaciones..."
+          ></textarea>
+        </div>
+      `;
+
+      document.getElementById("mb").innerHTML = html;
+
+      document.getElementById("mf").innerHTML = `
+        <button class="btn btn-s" onclick="cM()">
+          Cancelar
+        </button>
+
+        <button
+          class="btn btn-${esE ? "e" : "p"}"
+          onclick="savNota('${tipo}')"
+        >
+          <i class="fa-solid fa-save"></i>
+          ${esE ? "Registrar Entrada" : "Enviar Salida"}
+        </button>
+      `;
+
+      window._refacciones = refacciones;
+      window._equipos = equipos;
+
+      oM();
+
+      document.querySelectorAll(".nt-r").forEach((select) => {
+        actualizarPrecio(select);
+      });
+    })
+    .catch((err) => {
+      toast(
+        "Error al cargar datos para el formulario",
+        "er",
+        "Error",
+      );
+
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
       console.error(err);
     });
 }
@@ -1344,6 +1750,7 @@ function cargarEquiposPorUbicacion() {
 }
 function addFila() {
   const ref = window._refacciones || [];
+<<<<<<< HEAD
   const opts = ref
     .map(
       (r) =>
@@ -1367,6 +1774,110 @@ function addFila() {
     `;
   document.getElementById("nt-items").appendChild(d);
 }
+=======
+  const esEntrada = window._tipoNota === "entrada";
+
+  const opts = ref
+    .map(
+      (r) => `
+        <option
+          value="${r.id}"
+          data-precio="${Number(r.precio || 0)}"
+        >
+          ${r.codigo} - ${r.nombre} (Stock: ${r.cantidad})
+        </option>
+      `,
+    )
+    .join("");
+
+  const d = document.createElement("div");
+
+  d.className = "nt-row";
+
+  d.style.cssText =
+    "display:grid;grid-template-columns:1.5fr 0.8fr 0.8fr 0.8fr 1fr 0.8fr 36px;gap:6px;margin-bottom:6px;align-items:end";
+
+  d.innerHTML = `
+    <div>
+      <select
+        class="nt-r"
+        onchange="actualizarPrecio(this)"
+        style="width:100%;padding:7px;border:2px solid var(--b);border-radius:8px;font-size:12px"
+      >
+        ${opts}
+      </select>
+    </div>
+
+    <div>
+      <input
+        type="number"
+        class="nt-c"
+        value="1"
+        min="1"
+        style="width:100%;padding:7px;border:2px solid var(--b);border-radius:8px;font-size:12px"
+      >
+    </div>
+
+    <div>
+      <input
+        type="number"
+        class="nt-p"
+        value="0"
+        min="0"
+        step="0.01"
+        ${esEntrada ? "" : "readonly"}
+        style="
+          width:100%;
+          padding:7px;
+          border:2px solid var(--b);
+          border-radius:8px;
+          font-size:12px;
+          ${
+            esEntrada
+              ? ""
+              : "background:#f5f5f5;cursor:not-allowed;"
+          }
+        "
+      >
+    </div>
+
+    <div>
+      <select class="nt-tipo">
+        <option value="nueva">Nueva</option>
+        <option value="usada">Usada</option>
+      </select>
+    </div>
+
+    <div>
+      <input
+        type="file"
+        class="nt-foto"
+        accept="image/*"
+      >
+    </div>
+
+    <button
+      class="bi dg"
+      onclick="this.closest('.nt-row').remove()"
+    >
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  `;
+
+  document.getElementById("nt-items").appendChild(d);
+
+  actualizarPrecio(d.querySelector(".nt-r"));
+}
+// ESTA FUNCIÓN VA FUERA DE addFila()
+function actualizarPrecio(select) {
+  const fila = select.closest(".nt-row");
+  const inputPrecio = fila.querySelector(".nt-p");
+  const opcion = select.options[select.selectedIndex];
+
+  inputPrecio.value = Number(opcion?.dataset.precio || 0).toFixed(2);
+}
+
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
 function savNota(tipo) {
   const esE = tipo === "entrada";
   const origen = esE
@@ -1377,6 +1888,7 @@ function savNota(tipo) {
     return;
   }
 
+<<<<<<< HEAD
   const filas = document.querySelectorAll(".nt-row");
   const items = [];
   let err = false;
@@ -1403,6 +1915,55 @@ function savNota(tipo) {
     return;
   }
 
+=======
+const filas = document.querySelectorAll(".nt-row");
+const items = [];
+let err = false;
+
+filas.forEach((f) => {
+  const refId = f.querySelector(".nt-r").value;
+  const cantidad = Number(f.querySelector(".nt-c").value);
+  const precio = Number(f.querySelector(".nt-p").value);
+  const tipoRefaccion = f.querySelector(".nt-tipo").value;
+  const fotoFile = f.querySelector(".nt-foto").files[0];
+
+  if (!refId) {
+    err = true;
+    return;
+  }
+
+  if (!Number.isFinite(cantidad) || cantidad <= 0) {
+    err = true;
+    return;
+  }
+
+  // En entradas el precio nuevo debe ser válido
+  if (esE && (!Number.isFinite(precio) || precio <= 0)) {
+    err = true;
+    return;
+  }
+
+  items.push({
+    refaccion_id: refId,
+    cantidad,
+    precio_unitario: precio,
+    tipo_refaccion: tipoRefaccion,
+    foto: fotoFile,
+  });
+});
+
+if (!items.length || err) {
+  toast(
+    esE
+      ? "Selecciona una refacción e indica cantidad y precio válidos"
+      : "Agrega al menos una refacción con cantidad válida",
+    "er",
+    "Error",
+  );
+  return;
+}
+
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
   // Construir FormData
   const formData = new FormData();
   formData.append("tipo", tipo);
@@ -1412,15 +1973,29 @@ function savNota(tipo) {
     document.getElementById("nt-obs").value.trim(),
   );
 
+<<<<<<< HEAD
   if (esE) {
     formData.append("empresa", "");
+=======
+  const empresaNota = empresaActual || usuarioActual()?.empresa || "tecomatlan";
+
+  if (esE) {
+    formData.append("empresa", empresaNota);
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     formData.append("ubicacion_destino_id", "");
     formData.append("solicitante_id", "");
     formData.append("equipo_id", "");
   } else {
+<<<<<<< HEAD
     const usr = usuarioActual();
 
     formData.append("empresa", usr.empresa);
+=======
+    formData.append(
+      "empresa",
+      document.getElementById("nt-empresa").value || empresaNota,
+    );
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     formData.append(
       "ubicacion_destino_id",
       document.getElementById("nt-destino").value,
@@ -1434,7 +2009,10 @@ function savNota(tipo) {
       document.getElementById("nt-equipo").value || "",
     );
   }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
   // Preparar items como JSON (sin las fotos)
   const itemsData = items.map((it) => ({
     refaccion_id: it.refaccion_id,
@@ -1457,8 +2035,12 @@ function savNota(tipo) {
   fetch("/api/movimientos", {
     method: "POST",
     headers: {
+<<<<<<< HEAD
       Authorization: `Bearer ${localStorage.getItem("token")}`,
       // No incluir Content-Type, fetch lo pone automáticamente con FormData
+=======
+      Authorization: `Bearer ${obtenerToken()}`,
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     },
     body: formData,
   })
@@ -1471,7 +2053,13 @@ function savNota(tipo) {
     })
     .then((mov) => {
       cM();
+<<<<<<< HEAD
       render(S.sec);
+=======
+
+      nav(tipo === "entrada" ? "entradas" : "salidas");
+
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
       toast(
         esE ? "Nota de entrada registrada" : "Solicitud de salida creada",
         "ok",
@@ -1534,6 +2122,7 @@ function verNota(id) {
                 <div><span style="font-size:10px;color:var(--tc);text-transform:uppercase">${m.tipo === "entrada" ? "Proveedor" : "Solicitante"}</span><p style="font-weight:600;margin-top:3px">${m.tipo === "entrada" ? m.origen : m.solicitante_nombre || "N/A"}</p></div>
                 <div><span style="font-size:10px;color:var(--tc);text-transform:uppercase">Destino</span><p style="font-weight:600;margin-top:3px">${m.tipo === "entrada" ? "Bodega Central" : m.ubicacion_nombre || "N/A"}</p></div>
                 <div><span style="font-size:10px;color:var(--tc);text-transform:uppercase">Empresa</span><p style="margin-top:3px">${m.empresa ? empBadge(m.empresa) : "N/A"}</p></div>
+<<<<<<< HEAD
                 <div><span style="font-size:10px;color:var(--tc);text-transform:uppercase">Equipo</span><p style="margin-top:3px">${m.equipo_id ? "Cargando..." : "N/A"}</p></div>
                 ${
                   m.tipo === "salida"
@@ -1542,6 +2131,16 @@ function verNota(id) {
                 `
                     : ""
                 }
+=======
+                <div>
+    <span style="font-size:10px;color:var(--tc);text-transform:uppercase">
+        Equipo
+    </span>
+    <p style="font-weight:600;margin-top:3px">
+        ${window._equipos.find((e) => e.id === m.equipo_id)?.tipo || "N/A"}
+    </p>
+</div>
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
             </div>
             ${m.observaciones ? `<div style="background:var(--f);padding:10px 14px;border-radius:8px;margin-bottom:16px"><span style="font-size:10px;color:var(--tc);text-transform:uppercase">Observaciones:</span><p style="margin-top:3px;font-size:13px">${m.observaciones}</p></div>` : ""}
             <table style="width:100%;border-collapse:collapse"><thead><tr>
@@ -1733,7 +2332,11 @@ function savUbi(id) {
     });
 }
 function verUbi(id) {
+<<<<<<< HEAD
   fetch(`/api/ubicaciones/${id}`, {
+=======
+  fetch(`/ubicaciones/${id}`, {
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     headers: headersAuth(),
   })
     .then((res) => res.json())
@@ -1776,7 +2379,11 @@ function delUbi(id) {
   oM();
 
   // Obtener nombre de la ubicación para mostrarlo en el modal
+<<<<<<< HEAD
   fetch(`/api/ubicaciones/${id}`, { headers: headersAuth() })
+=======
+  fetch(`/ubicaciones/${id}`, { headers: headersAuth() })
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     .then((res) => res.json())
     .then((u) => {
       const el = document.getElementById("ubi-nom-eliminar");
@@ -1786,7 +2393,11 @@ function delUbi(id) {
 }
 
 function confDelUbi(id) {
+<<<<<<< HEAD
   fetch(`/api/ubicaciones/${id}`, {
+=======
+  fetch(`/ubicaciones/${id}`, {
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     method: "DELETE",
     headers: headersAuth(),
   })
@@ -1846,7 +2457,11 @@ function rEquipos() {
         .join("");
 
       // Cargar nombres de ubicaciones para cada equipo (fetch adicional o usar cache)
+<<<<<<< HEAD
       // Como tenemos pocos equipos, podemos hacer un fetch a /api/ubicaciones y reemplazar
+=======
+      // Como tenemos pocos equipos, podemos hacer un fetch a /ubicaciones y reemplazar
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
       fetch("/api/ubicaciones", { headers: headersAuth() })
         .then((res) => res.json())
         .then((ubicaciones) => {
@@ -1884,7 +2499,11 @@ function mEquipo(id) {
       let html = "";
       if (id) {
         // Si es edición, obtener datos del equipo
+<<<<<<< HEAD
         fetch(`/api/equipos/${id}`, { headers: headersAuth() })
+=======
+        fetch(`/equipos/${id}`, { headers: headersAuth() })
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
           .then((res) => res.json())
           .then((equipo) => {
             mostrarFormularioEquipo(equipo, optsU);
@@ -1981,7 +2600,11 @@ function savEquipo(id) {
 }
 function delEquipo(id) {
   // Obtener el nombre del equipo para mostrarlo en la confirmación
+<<<<<<< HEAD
   fetch(`/api/equipos/${id}`, { headers: headersAuth() })
+=======
+  fetch(`/equipos/${id}`, { headers: headersAuth() })
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     .then((res) => res.json())
     .then((equipo) => {
       if (!equipo) return;
@@ -2006,7 +2629,11 @@ function delEquipo(id) {
 }
 
 function confDelEquipo(id) {
+<<<<<<< HEAD
   fetch(`/api/equipos/${id}`, {
+=======
+  fetch(`/equipos/${id}`, {
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     method: "DELETE",
     headers: headersAuth(),
   })
@@ -2169,7 +2796,11 @@ function delUsu(id) {
   oM();
 }
 function confDelUsu(id) {
+<<<<<<< HEAD
   fetch(`/api/usuarios/${id}`, { method: "DELETE", headers: headersAuth() })
+=======
+  fetch(`/usuarios/${id}`, { method: "DELETE", headers: headersAuth() })
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     .then((r) =>
       r.ok
         ? r.json()
@@ -2292,6 +2923,7 @@ function limpiarReportes() {
 }
 
 function descargarReporte(tipo, formato) {
+<<<<<<< HEAD
   const params = paramsReportes(tipo);
   params.delete("tipo");
   const token = obtenerToken();
@@ -2302,6 +2934,23 @@ function descargarReporte(tipo, formato) {
 
   // Se abre en una pestaña con el token como parametro para permitir descarga directa.
   params.append("token", token);
+=======
+  const token = obtenerToken();
+  const params = new URLSearchParams();
+
+  const fechaInicio = document.getElementById("rep-fecha-inicio")?.value;
+  const fechaFin = document.getElementById("rep-fecha-fin")?.value;
+  const empresa = document.getElementById("rep-empresa")?.value;
+  const texto = document.getElementById("rep-busqueda")?.value;
+
+  if (fechaInicio) params.append("fechaInicio", fechaInicio);
+  if (fechaFin) params.append("fechaFin", fechaFin);
+  if (empresa) params.append("empresa", empresa);
+  if (texto) params.append("texto", texto);
+
+  params.append("token", token);
+
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
   window.open(
     `/api/reportes/${tipo}/${formato}?${params.toString()}`,
     "_blank",
@@ -2320,7 +2969,13 @@ function mapAlerta(a) {
   };
 }
 function rAle() {
+<<<<<<< HEAD
   fetch("/api/alertas", { headers: headersAuth() })
+=======
+  fetch("/api/alertas", {
+    headers: headersAuth(),
+  })
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     .then((r) => {
       if (!r.ok) throw new Error("Error al cargar alertas");
       return r.json();

@@ -55,6 +55,7 @@
                 <nav class="sn">
                     <div class="ns">Empresa</div>
 
+<<<<<<< HEAD
                     <div class="ni" id="emp-tec"
                         onclick="cambiarEmpresa('tecomatlan')">
                         <i class="fa-solid fa-fire"></i>
@@ -66,6 +67,17 @@
                         <i class="fa-solid fa-fire"></i>
                         Gas El Paraíso
                     </div>
+=======
+                   <div class="ni" id="emp-tec" onclick="cambiarEmpresa('tecomatlan')">
+    <i class="fa-solid fa-fire"></i>
+    Gas Tecomatlán
+</div>
+
+<div class="ni" id="emp-par" onclick="cambiarEmpresa('paraiso')">
+    <i class="fa-solid fa-fire"></i>
+    Gas El Paraíso
+</div>
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
                     <div class="ns">Principal</div>
                     <div class="ni act" data-s="dashboard"
                         onclick="nav('dashboard')"><i
@@ -91,8 +103,12 @@
                         onclick="nav('usuarios')"><i
                             class="fa-solid fa-users"></i>Usuarios</div>
                     <div class="ns">Reportes</div>
+<<<<<<< HEAD
                     <div class="ni" data-s="reportes"
                         onclick="nav('reportes')"><i
+=======
+                    <div class="ni" data-s="reportes" onclick="nav('reportes')"><i
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
                             class="fa-solid fa-chart-column"></i>Reportes</div>
                     <div class="ni" data-s="alertas" onclick="nav('alertas')"><i
                             class="fa-solid fa-bell"></i>Alertas<span class="nb"
@@ -286,13 +302,18 @@
                     <section class="sec" id="s-reportes">
                         <div class="tc report-card">
                             <div class="th">
+<<<<<<< HEAD
                                 <h3><i class="fa-solid fa-chart-column"
                                         style="margin-right:6px;color:var(--p)"></i>Reportes</h3>
+=======
+                                <h3><i class="fa-solid fa-chart-column" style="margin-right:6px;color:var(--p)"></i>Reportes</h3>
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
                             </div>
 
                             <div class="report-filters">
                                 <div class="fg">
                                     <label>Fecha inicio</label>
+<<<<<<< HEAD
                                     <input class="fs" type="date"
                                         id="rep-fecha-inicio">
                                 </div>
@@ -300,20 +321,34 @@
                                     <label>Fecha fin</label>
                                     <input class="fs" type="date"
                                         id="rep-fecha-fin">
+=======
+                                    <input class="fs" type="date" id="rep-fecha-inicio">
+                                </div>
+                                <div class="fg">
+                                    <label>Fecha fin</label>
+                                    <input class="fs" type="date" id="rep-fecha-fin">
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
                                 </div>
                                 <div class="fg">
                                     <label>Empresa</label>
                                     <select class="fs" id="rep-empresa">
+<<<<<<< HEAD
                                         <option value>Todas</option>
                                         <option value="tecomatlan">Gas
                                             Tecomatlan</option>
                                         <option value="paraiso">Gas El
                                             Paraiso</option>
+=======
+                                        <option value="">Todas</option>
+                                        <option value="tecomatlan">Gas Tecomatlan</option>
+                                        <option value="paraiso">Gas El Paraiso</option>
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
                                     </select>
                                 </div>
                                 <div class="fg">
                                     <label>Reporte a visualizar</label>
                                     <select class="fs" id="rep-tipo">
+<<<<<<< HEAD
                                         <option
                                             value="movimientos">Movimientos</option>
                                         <option value="detalle">Detalle
@@ -324,17 +359,29 @@
                                             por empresa</option>
                                         <option value="salidas-equipo">Salidas
                                             por equipo</option>
+=======
+                                        <option value="movimientos">Movimientos</option>
+                                        <option value="detalle">Detalle movimientos</option>
+                                        <option value="inventario">Inventario actual</option>
+                                        <option value="salidas-empresa">Salidas por empresa</option>
+                                        <option value="salidas-equipo">Salidas por equipo</option>
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
                                     </select>
                                 </div>
                                 <div class="fg report-search">
                                     <label>Buscar</label>
+<<<<<<< HEAD
                                     <input class="fs" type="text"
                                         id="rep-busqueda"
                                         placeholder="Nota, refaccion, codigo, equipo...">
+=======
+                                    <input class="fs" type="text" id="rep-busqueda" placeholder="Nota, refaccion, codigo, equipo...">
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
                                 </div>
                             </div>
 
                             <div class="report-actions">
+<<<<<<< HEAD
                                 <button class="btn btn-p"
                                     onclick="buscarReportes()"><i
                                         class="fa-solid fa-magnifying-glass"></i>
@@ -343,10 +390,15 @@
                                     onclick="limpiarReportes()"><i
                                         class="fa-solid fa-broom"></i>
                                     Limpiar</button>
+=======
+                                <button class="btn btn-p" onclick="buscarReportes()"><i class="fa-solid fa-magnifying-glass"></i> Buscar</button>
+                                <button class="btn btn-s" onclick="limpiarReportes()"><i class="fa-solid fa-broom"></i> Limpiar</button>
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
                             </div>
 
                             <div class="report-downloads">
                                 <div class="report-row">
+<<<<<<< HEAD
                                     <span><i class="fa-solid fa-file-lines"></i>
                                         Movimientos</span>
                                     <button class="btn btn-s"
@@ -415,6 +467,36 @@
                             <div class="tw"><table><thead
                                         id="tb-rep-head"></thead><tbody
                                         id="tb-rep"></tbody></table></div>
+=======
+                                    <span><i class="fa-solid fa-file-lines"></i> Movimientos</span>
+                                    <button class="btn btn-s" onclick="descargarReporte('movimientos','excel')"><i class="fa-solid fa-file-excel"></i> Excel</button>
+                                    <button class="btn btn-s" onclick="descargarReporte('movimientos','pdf')"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                                </div>
+                                <div class="report-row">
+                                    <span><i class="fa-solid fa-list-check"></i> Detalle movimientos</span>
+                                    <button class="btn btn-s" onclick="descargarReporte('detalle','excel')"><i class="fa-solid fa-file-excel"></i> Excel</button>
+                                    <button class="btn btn-s" onclick="descargarReporte('detalle','pdf')"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                                </div>
+                                <div class="report-row">
+                                    <span><i class="fa-solid fa-boxes-stacked"></i> Inventario actual</span>
+                                    <button class="btn btn-s" onclick="descargarReporte('inventario','excel')"><i class="fa-solid fa-file-excel"></i> Excel</button>
+                                    <button class="btn btn-s" onclick="descargarReporte('inventario','pdf')"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                                </div>
+                                <div class="report-row">
+                                    <span><i class="fa-solid fa-building"></i> Salidas por empresa</span>
+                                    <button class="btn btn-s" onclick="descargarReporte('salidas-empresa','excel')"><i class="fa-solid fa-file-excel"></i> Excel</button>
+                                    <button class="btn btn-s" onclick="descargarReporte('salidas-empresa','pdf')"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                                </div>
+                                <div class="report-row">
+                                    <span><i class="fa-solid fa-truck"></i> Salidas por equipo</span>
+                                    <button class="btn btn-s" onclick="descargarReporte('salidas-equipo','excel')"><i class="fa-solid fa-file-excel"></i> Excel</button>
+                                    <button class="btn btn-s" onclick="descargarReporte('salidas-equipo','pdf')"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                                </div>
+                            </div>
+
+                            <div class="report-result-title" id="rep-resumen">Usa los filtros y presiona Buscar para ver el reporte en pantalla.</div>
+                            <div class="tw"><table><thead id="tb-rep-head"></thead><tbody id="tb-rep"></tbody></table></div>
+>>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
                         </div>
                     </section>
 
