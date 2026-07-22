@@ -5,11 +5,7 @@ const router = express.Router();
 const { pool } = require('../config/db');
 const { esHashBcrypt } = require('../utils/password');
 
-<<<<<<< HEAD
-router.post('/api/auth/login', async (req, res) => {
-=======
 router.post('/auth/login', async (req, res) => {
->>>>>>> 280dd12de7901b16f8fbd04405e569ffa4762d95
     try {
         // Imprimir el body para depuración
         console.log('Body recibido:', req.body);
