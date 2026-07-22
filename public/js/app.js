@@ -1335,9 +1335,7 @@ function mNota(tipo) {
           )
           .join("");
 
-        const usuariosFiltrados = usuarios.filter(
-          (u) => u.rol !== "bodega",
-        );
+        const usuariosFiltrados = usuarios.filter((u) => u.rol !== "bodega");
 
         const optsUs = usuariosFiltrados
           .map(
@@ -1464,11 +1462,7 @@ function mNota(tipo) {
                     border:2px solid var(--b);
                     border-radius:8px;
                     font-size:12px;
-                    ${
-                      esE
-                        ? ""
-                        : "background:#f5f5f5;cursor:not-allowed;"
-                    }
+                    ${esE ? "" : "background:#f5f5f5;cursor:not-allowed;"}
                   "
                   placeholder="Precio"
                 >
@@ -1561,11 +1555,7 @@ function mNota(tipo) {
       });
     })
     .catch((err) => {
-      toast(
-        "Error al cargar datos para el formulario",
-        "er",
-        "Error",
-      );
+      toast("Error al cargar datos para el formulario", "er", "Error");
 
       console.error(err);
     });
@@ -1642,11 +1632,7 @@ function addFila() {
           border:2px solid var(--b);
           border-radius:8px;
           font-size:12px;
-          ${
-            esEntrada
-              ? ""
-              : "background:#f5f5f5;cursor:not-allowed;"
-          }
+          ${esEntrada ? "" : "background:#f5f5f5;cursor:not-allowed;"}
         "
       >
     </div>
@@ -1697,52 +1683,52 @@ function savNota(tipo) {
     return;
   }
 
-const filas = document.querySelectorAll(".nt-row");
-const items = [];
-let err = false;
+  const filas = document.querySelectorAll(".nt-row");
+  const items = [];
+  let err = false;
 
-filas.forEach((f) => {
-  const refId = f.querySelector(".nt-r").value;
-  const cantidad = Number(f.querySelector(".nt-c").value);
-  const precio = Number(f.querySelector(".nt-p").value);
-  const tipoRefaccion = f.querySelector(".nt-tipo").value;
-  const fotoFile = f.querySelector(".nt-foto").files[0];
+  filas.forEach((f) => {
+    const refId = f.querySelector(".nt-r").value;
+    const cantidad = Number(f.querySelector(".nt-c").value);
+    const precio = Number(f.querySelector(".nt-p").value);
+    const tipoRefaccion = f.querySelector(".nt-tipo").value;
+    const fotoFile = f.querySelector(".nt-foto").files[0];
 
-  if (!refId) {
-    err = true;
-    return;
-  }
+    if (!refId) {
+      err = true;
+      return;
+    }
 
-  if (!Number.isFinite(cantidad) || cantidad <= 0) {
-    err = true;
-    return;
-  }
+    if (!Number.isFinite(cantidad) || cantidad <= 0) {
+      err = true;
+      return;
+    }
 
-  // En entradas el precio nuevo debe ser válido
-  if (esE && (!Number.isFinite(precio) || precio <= 0)) {
-    err = true;
-    return;
-  }
+    // En entradas el precio nuevo debe ser válido
+    if (esE && (!Number.isFinite(precio) || precio <= 0)) {
+      err = true;
+      return;
+    }
 
-  items.push({
-    refaccion_id: refId,
-    cantidad,
-    precio_unitario: precio,
-    tipo_refaccion: tipoRefaccion,
-    foto: fotoFile,
+    items.push({
+      refaccion_id: refId,
+      cantidad,
+      precio_unitario: precio,
+      tipo_refaccion: tipoRefaccion,
+      foto: fotoFile,
+    });
   });
-});
 
-if (!items.length || err) {
-  toast(
-    esE
-      ? "Selecciona una refacción e indica cantidad y precio válidos"
-      : "Agrega al menos una refacción con cantidad válida",
-    "er",
-    "Error",
-  );
-  return;
-}
+  if (!items.length || err) {
+    toast(
+      esE
+        ? "Selecciona una refacción e indica cantidad y precio válidos"
+        : "Agrega al menos una refacción con cantidad válida",
+      "er",
+      "Error",
+    );
+    return;
+  }
 
   // Construir FormData
   const formData = new FormData();
@@ -2177,7 +2163,17 @@ function rEquipos() {
             <tr>
                 <td style="font-weight:700">${e.nombre}</td>
                 <td>${empBadge(e.empresa)}</td>
-                <td><span class="bd ${e.tipo === "pipa" ? "bd-pipa" : e.tipo === "trailer" ? "bd-trailer" : e.tipo === "estacion" ? "bd-t3" : "bd-otro"}">${e.tipo.charAt(0).toUpperCase() + e.tipo.slice(1)}</span></td>
+                <td><span class="bd ${
+                  e.tipo === "pipa"
+                    ? "bd-pipa"
+                    : e.tipo === "trailer"
+                      ? "bd-trailer"
+                      : e.tipo === "cilindrera"
+                        ? "bd-cilindrera"
+                        : e.tipo === "estacion"
+                          ? "bd-t3"
+                          : "bd-otro"
+                }">${e.tipo.charAt(0).toUpperCase() + e.tipo.slice(1)}</span></td>
                 <td style="font-size:12px">${e.ubicacion_id ? "Cargando..." : "Sin asignar"}</td>
                 <td>${e.activo ? '<span class="bd bd-ok">Activo</span>' : '<span class="bd bd-bajo">Inactivo</span>'}</td>
                 <td><div class="ail">
@@ -2253,11 +2249,16 @@ function mostrarFormularioEquipo(equipo, optsU) {
         <div class="fr">
             <div class="fg"><label>Nombre del equipo</label><input type="text" id="eq-nombre" value="${equipo?.nombre || ""}" placeholder="Ej: Pipa 01"></div>
             <div class="fg"><label>Tipo</label><select id="eq-tipo">
-                <option value="pipa" ${equipo?.tipo === "pipa" ? "selected" : ""}>Pipa</option>
-                <option value="trailer" ${equipo?.tipo === "trailer" ? "selected" : ""}>Trailer</option>
-                <option value="estacion" ${equipo?.tipo === "estacion" ? "selected" : ""}>Estación</option>
-                <option value="otro" ${equipo?.tipo === "otro" ? "selected" : ""}>Otro</option>
-            </select></div>
+    <option value="pipa" ${equipo?.tipo === "pipa" ? "selected" : ""}>Pipa</option>
+
+    <option value="trailer" ${equipo?.tipo === "trailer" ? "selected" : ""}>Trailer</option>
+
+    <option value="cilindrera" ${equipo?.tipo === "cilindrera" ? "selected" : ""}>Cilindrera</option>
+
+    <option value="estacion" ${equipo?.tipo === "estacion" ? "selected" : ""}>Estación</option>
+
+    <option value="otro" ${equipo?.tipo === "otro" ? "selected" : ""}>Otro</option>
+</select></div>
         </div>
         <div class="fr">
             <div class="fg"><label>Empresa</label><select id="eq-empresa">

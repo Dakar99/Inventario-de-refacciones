@@ -762,6 +762,11 @@ tbody tr:hover {
     color: #1565C0
 }
 
+.bd-cilindrera{
+    background: #E3F2FD;
+    color: #1565C0
+}
+
 .bd-planta {
     background: #E8F5E9;
     color: #2E7D32
@@ -1476,3 +1481,4 @@ tbody tr:hover {
         width: 100%;
     }
 }
+
