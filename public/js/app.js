@@ -980,7 +980,7 @@ function rInv() {
                 <td>${sBadge(r.cantidad, r.stock_minimo)}</td>
                 <td><div class="ail">
                     <button class="bi" onclick="mRef('${r.id}')" title="Editar"><i class="fa-solid fa-pen"></i></button>
-                    <button class="bi dg" onclick="delRef('${r.id}')" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                    <button class="bi bi-del" onclick="delRef('${r.id}')" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
                 </div></td>
             </tr>
         `,
@@ -1267,6 +1267,90 @@ function rSal() {
     });
 }
 // MODAL NOTA
+function crearFilaRefaccion(opts, esEntrada) {
+  return `
+    <div
+      class="nt-row"
+      style="
+        display:grid;
+        grid-template-columns:
+minmax(180px,2fr)
+70px
+90px
+90px
+140px
+36px;
+        gap:6px;
+        margin-bottom:6px;
+        align-items:end;
+      "
+    >
+      <div>
+        <select
+          class="nt-r"
+          onchange="actualizarPrecio(this)"
+          style="width:100%;padding:7px;border:2px solid var(--b);border-radius:8px;font-size:12px"
+        >
+          ${opts}
+        </select>
+      </div>
+
+      <div>
+        <input
+          type="number"
+          class="nt-c"
+          value="1"
+          min="1"
+          placeholder="Cant."
+          style="width:100%;padding:7px;border:2px solid var(--b);border-radius:8px;font-size:12px"
+        >
+      </div>
+
+      <div>
+        <input
+          type="number"
+          class="nt-p"
+          value="0"
+          min="0"
+          step="0.01"
+          ${esEntrada ? "" : "readonly"}
+          placeholder="Precio"
+          style="width:100%;padding:7px;border:2px solid var(--b);border-radius:8px;font-size:12px;${esEntrada ? "" : "background:#f5f5f5;cursor:not-allowed;"}"
+        >
+      </div>
+
+      <div>
+        <select
+          class="nt-tipo"
+          style="width:100%;padding:7px;border:2px solid var(--b);border-radius:8px;font-size:12px"
+        >
+          <option value="nueva">Nueva</option>
+          <option value="usada">Usada</option>
+        </select>
+      </div>
+
+      <div>
+        <input
+          type="file"
+          class="nt-foto"
+          accept="image/*"
+          capture="environment"
+          style="width:100%;padding:4px;border:2px solid var(--b);border-radius:8px;font-size:11px"
+        >
+      </div>
+
+      <button
+    type="button"
+    class="bi bi-del"
+    onclick="this.closest('.nt-row').remove()"
+    title="Eliminar refacción"
+>
+    <i class="fa-solid fa-xmark"></i>
+</button>
+    </div>
+  `;
+}
+
 function mNota(tipo) {
   const esE = tipo === "entrada";
 
@@ -1405,108 +1489,7 @@ function mNota(tipo) {
           </label>
 
           <div id="nt-items">
-            <div
-              class="nt-row"
-              style="
-                display:grid;
-                grid-template-columns:1.5fr 0.8fr 0.8fr 0.8fr 1fr 0.8fr 36px;
-                gap:6px;
-                margin-bottom:6px;
-                align-items:end
-              "
-            >
-              <div>
-                <select
-                  class="nt-r"
-                  onchange="actualizarPrecio(this)"
-                  style="
-                    width:100%;
-                    padding:7px;
-                    border:2px solid var(--b);
-                    border-radius:8px;
-                    font-size:12px
-                  "
-                >
-                  ${optsR}
-                </select>
-              </div>
-
-              <div>
-                <input
-                  type="number"
-                  class="nt-c"
-                  value="1"
-                  min="1"
-                  style="
-                    width:100%;
-                    padding:7px;
-                    border:2px solid var(--b);
-                    border-radius:8px;
-                    font-size:12px
-                  "
-                  placeholder="Cant."
-                >
-              </div>
-
-              <div>
-                <input
-                  type="number"
-                  class="nt-p"
-                  value="0"
-                  min="0"
-                  step="0.01"
-                  ${esE ? "" : "readonly"}
-                  style="
-                    width:100%;
-                    padding:7px;
-                    border:2px solid var(--b);
-                    border-radius:8px;
-                    font-size:12px;
-                    ${esE ? "" : "background:#f5f5f5;cursor:not-allowed;"}
-                  "
-                  placeholder="Precio"
-                >
-              </div>
-
-              <div>
-                <select
-                  class="nt-tipo"
-                  style="
-                    width:100%;
-                    padding:7px;
-                    border:2px solid var(--b);
-                    border-radius:8px;
-                    font-size:12px
-                  "
-                >
-                  <option value="nueva">Nueva</option>
-                  <option value="usada">Usada</option>
-                </select>
-              </div>
-
-              <div>
-                <input
-                  type="file"
-                  class="nt-foto"
-                  accept="image/*"
-                  capture="environment"
-                  style="
-                    width:100%;
-                    padding:4px;
-                    border:2px solid var(--b);
-                    border-radius:8px;
-                    font-size:11px
-                  "
-                >
-              </div>
-
-              <button
-                class="bi dg"
-                onclick="this.closest('.nt-row').remove()"
-              >
-                <i class="fa-solid fa-xmark"></i>
-              </button>
-            </div>
+            ${crearFilaRefaccion(optsR, esE)}
           </div>
 
           <button
@@ -1581,88 +1564,21 @@ function addFila() {
     .map(
       (r) => `
         <option
-          value="${r.id}"
-          data-precio="${Number(r.precio || 0)}"
-        >
-          ${r.codigo} - ${r.nombre} (Stock: ${r.cantidad})
+            value="${r.id}"
+            data-precio="${Number(r.precio || 0)}">
+            ${r.codigo} - ${r.nombre} (Stock: ${r.cantidad})
         </option>
-      `,
+    `,
     )
     .join("");
 
-  const d = document.createElement("div");
+  const cont = document.getElementById("nt-items");
 
-  d.className = "nt-row";
+  cont.insertAdjacentHTML("beforeend", crearFilaRefaccion(opts, esEntrada));
 
-  d.style.cssText =
-    "display:grid;grid-template-columns:1.5fr 0.8fr 0.8fr 0.8fr 1fr 0.8fr 36px;gap:6px;margin-bottom:6px;align-items:end";
+  const nuevaFila = cont.lastElementChild;
 
-  d.innerHTML = `
-    <div>
-      <select
-        class="nt-r"
-        onchange="actualizarPrecio(this)"
-        style="width:100%;padding:7px;border:2px solid var(--b);border-radius:8px;font-size:12px"
-      >
-        ${opts}
-      </select>
-    </div>
-
-    <div>
-      <input
-        type="number"
-        class="nt-c"
-        value="1"
-        min="1"
-        style="width:100%;padding:7px;border:2px solid var(--b);border-radius:8px;font-size:12px"
-      >
-    </div>
-
-    <div>
-      <input
-        type="number"
-        class="nt-p"
-        value="0"
-        min="0"
-        step="0.01"
-        ${esEntrada ? "" : "readonly"}
-        style="
-          width:100%;
-          padding:7px;
-          border:2px solid var(--b);
-          border-radius:8px;
-          font-size:12px;
-          ${esEntrada ? "" : "background:#f5f5f5;cursor:not-allowed;"}
-        "
-      >
-    </div>
-
-    <div>
-      <select class="nt-tipo">
-        <option value="nueva">Nueva</option>
-        <option value="usada">Usada</option>
-      </select>
-    </div>
-
-    <div>
-      <input
-        type="file"
-        class="nt-foto"
-        accept="image/*"
-      >
-    </div>
-
-    <button
-      class="bi dg"
-      onclick="this.closest('.nt-row').remove()"
-    >
-      <i class="fa-solid fa-xmark"></i>
-    </button>
-  `;
-
-  document.getElementById("nt-items").appendChild(d);
-
-  actualizarPrecio(d.querySelector(".nt-r"));
+  actualizarPrecio(nuevaFila.querySelector(".nt-r"));
 }
 // ESTA FUNCIÓN VA FUERA DE addFila()
 function actualizarPrecio(select) {
@@ -1948,7 +1864,7 @@ function rUbi() {
                 <td><div class="ail">
                     <button class="bi" onclick="mUbi('${u.id}')" title="Editar"><i class="fa-solid fa-pen"></i></button>
                     <button class="bi" onclick="verUbi('${u.id}')" title="Ver detalle"><i class="fa-solid fa-eye"></i></button>
-                    <button class="bi dg" onclick="delUbi('${u.id}')" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                    <button class="bi bi-del" onclick="delUbi('${u.id}')" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
                 </div></td>
             </tr>
         `,
@@ -2176,10 +2092,17 @@ function rEquipos() {
                 }">${e.tipo.charAt(0).toUpperCase() + e.tipo.slice(1)}</span></td>
                 <td style="font-size:12px">${e.ubicacion_id ? "Cargando..." : "Sin asignar"}</td>
                 <td>${e.activo ? '<span class="bd bd-ok">Activo</span>' : '<span class="bd bd-bajo">Inactivo</span>'}</td>
-                <td><div class="ail">
-                    <button class="bi" onclick="mEquipo('${e.id}')" title="Editar"><i class="fa-solid fa-pen"></i></button>
-                    <button class="bi dg" onclick="delEquipo('${e.id}')" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
-                </div></td>
+                <td>
+    <div class="ail">
+        <button class="bi" onclick="mEquipo('${e.id}')" title="Editar">
+            <i class="fa-solid fa-pen"></i>
+        </button>
+
+        <button class="bi bi-del" onclick="delEquipo('${e.id}')" title="Eliminar">
+            <i class="fa-solid fa-trash"></i>
+        </button>
+    </div>
+</td>
             </tr>
         `,
         )
@@ -2419,7 +2342,7 @@ function rUsu() {
         <td>${empBadge(u.empresa)}</td>
         <td style="font-size:12px">${u.ubicacion_nombre || mapaUbi[u.ubicacion] || "Sin asignar"}</td>
         <td><span class="bd ${u.rol === "encargado" ? "bd-t1" : "bd-otro"}">${rolTxt(u.rol)}</span></td>
-        <td><div class="ail"><button class="bi" onclick="mUsu('${u.id}')" title="Editar"><i class="fa-solid fa-pen"></i></button><button class="bi dg" onclick="delUsu('${u.id}')" title="Eliminar"><i class="fa-solid fa-trash"></i></button></div></td>
+        <td><div class="ail"><button class="bi" onclick="mUsu('${u.id}')" title="Editar"><i class="fa-solid fa-pen"></i></button><button class="bi bi-del" onclick="delUsu('${u.id}')" title="Eliminar"><i class="fa-solid fa-trash"></i></button></div></td>
         </tr>`,
             )
             .join("")

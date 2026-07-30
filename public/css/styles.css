@@ -1177,32 +1177,43 @@ tbody tr:hover {
 
 .ail {
     display: flex;
-    gap: 5px
-}
-
-.bi {
-    width: 28px;
-    height: 28px;
-    border-radius: 7px;
-    border: none;
-    cursor: pointer;
-    transition: var(--tr);
-    display: flex;
-    align-items: center;
     justify-content: center;
-    font-size: 11px;
-    background: var(--f);
-    color: var(--tc)
+    align-items: center;
+    gap: 6px;
+    width: 100%;
 }
 
-.bi:hover {
-    color: var(--p);
-    background: rgba(11, 61, 145, .1)
+.bi{
+    width:30px;
+    height:30px;
+    padding:0;
+
+    display:inline-flex;
+    justify-content:center;
+    align-items:center;
+
+    border:none;
+    border-radius:7px;
+    cursor:pointer;
+    transition:var(--tr);
+
+    background:var(--f);
+    color:var(--tc);
 }
 
-.bi.dg:hover {
-    color: var(--d);
-    background: rgba(229, 57, 53, .1)
+.bi i{
+    display:block;
+    line-height:1;
+    margin:0;
+}
+
+.bi-del:hover{
+    color:var(--d);
+    background:rgba(229,57,53,.12);
+}
+
+#tb-usu td:last-child {
+    text-align: center;
 }
 
 .tv {
