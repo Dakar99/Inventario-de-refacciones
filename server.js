@@ -19,6 +19,7 @@ const movimientosRoutes = require('./src/routes/movimientos.routes');
 const reportesRoutes = require('./src/routes/reportes.routes');
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 7549;
 
 //app.listen(PORT, "0.0.0.0", () => {
@@ -39,9 +40,9 @@ app.use(rateLimit({
 
 app.use(cors({
     origin: [
-        //'http://localhost:3000',
         'http://localhost:7549',
-        'http://100.94.107.84:7549'
+        'http://100.100.141.69:7549',
+        'http://refaglp.sectorgas.com:7549'
     ],
     credentials: true
 }));
