@@ -1,8 +1,34 @@
+# Dependencias
 node_modules/
-.env
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.DS_Store
+
+# Secretos (CRÍTICO)
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+
+# Archivos temporales / backups
+*.save*
+*.s1
+*.s
+*.bak
+*.tmp
+
+# Uploads dinámicos (fotos subidas por usuarios)
+# Se conserva el .gitkeep para que la carpeta exista en el repo
 public/uploads/*
 !public/uploads/.gitkeep
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# PM2
+.pm2/
+*.pid
