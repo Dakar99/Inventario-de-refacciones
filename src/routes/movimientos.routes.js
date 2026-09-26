@@ -170,18 +170,37 @@ router.post(
         }
       }
 
-      // Generar número de nota
+      // Generar número de nota correctamente
+      await client.query("BEGIN");
       const year = new Date().getFullYear();
       const prefix = tipo === "entrada" ? "ENT" : "SAL";
-      const countRes = await client.query(
-        `SELECT COUNT(*) FROM movimientos WHERE tipo = $1 AND EXTRACT(YEAR FROM fecha) = $2`,
+      
+      await client.query(
+        `SELECT pg_advisory_xact_lock(hashtext($1))`,
+        [`movimiento-${tipo}-${year}`],
+       );
+      
+      const ultimoRes = await client.query(
+        `
+          SELECT COALESCE(
+            MAX(
+              CAST(SPLIT_PART(numero_nota, '-', 3) AS INTEGER)
+            ),
+            0
+          ) AS ultimo
+          FROM movimientos
+          WHERE tipo = $1
+            AND EXTRACT(YEAR FROM fecha) = $2
+        `,
         [tipo, year],
       );
-      const count = parseInt(countRes.rows[0].count) + 1;
-      const numero_nota = `${prefix}-${year}-${String(count).padStart(3, "0")}`;
-      const estado = tipo === "entrada" ? "completada" : "pendiente";
 
-      await client.query("BEGIN");
+      const ultimo = parseInt(ultimoRes.rows[0].ultimo, 10);
+      const siguiente = ultimo + 1;
+
+      const numero_nota = `${prefix}-${year}-${String(siguiente).padStart(3, "0")}`;
+
+      const estado = tipo === "entrada" ? "completada" : "pendiente";
 
       // Insertar movimiento
       const movResult = await client.query(
